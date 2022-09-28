@@ -25,11 +25,13 @@ exports.viewallusers = (req, res) => {
 
 //add one user
 exports.adduser = (req, res) => {
-  const { email, name, type, status, group } = req.body;
+  const { email, name, type, status, visions} = req.body;
 
-  const query = `INSERT INTO users VALUES (?,?,?,?,?)`;
+  const query = `INSERT INTO users 
+  (email, name, type, status, visions)
+  VALUES (?,?,?,?,?)`;
 
-  connection.promise().query(query, [email, name, type, status, group])
+  connection.promise().query(query, [email, name, type, status, visions])
   .then(data => {
     if (data[0].affectedRows) {
       message = 'user created successfully';
