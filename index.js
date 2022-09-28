@@ -16,7 +16,7 @@ const connection = mysql.createConnection({
 });
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 3001;
 
 app.use(cors());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -34,13 +34,13 @@ app.get("/view-user", async (req, res) => {
 });
 
 app.post("/post-user", async (req, res) =>{
-  const { email, name, type, status, group } = req.body;
+  const { email, name, type, status, group, password } = req.body;
   let message = 'Error in creating user';
 
   const query = `INSERT INTO users
-  VALUES (?,?,?,?,?)`;
+  VALUES (?,?,?,?,?,?)`;
 
-  connection.promise().query(query, [email, name, type, status, group])
+  connection.promise().query(query, [email, name, type, status, group, password])
   .then(data => {
     if (data[0].affectedRows) {
       message = 'user created successfully';

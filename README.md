@@ -17,5 +17,6 @@ Reqeust Handling: Express
     dotenv: 16.0.2<br/>
     express: 4.18.1<br/>
     mysql: latest<br/>
+    (if this doesn't work, use mysql2)
     nodemon: 2.0.20
 2. node index.js
