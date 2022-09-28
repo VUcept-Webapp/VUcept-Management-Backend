@@ -1,0 +1,31 @@
+{
+  "name": "express",
+  "version": "4.18.1",
+  "description": "## Description This is the backend code base for VUcept Management project",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/VUcept-Webapp/VUcept-Management-Backend.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/VUcept-Webapp/VUcept-Management-Backend/issues"
+  },
+  "homepage": "https://github.com/VUcept-Webapp/VUcept-Management-Backend#readme",
+  "dependencies": {
+    "aws-sdk": "latest",
+    "body-parser": "latest",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.2",
+    "ejs": "latest",
+    "express": "^4.18.1",
+    "mysql": "latest",
+    "mysql2": "^2.3.3",
+    "nodemon": "^2.0.20"
+  }
+}
