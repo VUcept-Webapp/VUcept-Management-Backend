@@ -4,6 +4,9 @@ const userController = require('../controllers/userController');
 
 // Routes
 router.get('/viewallusers', userController.viewallusers);
+router.get('/viewallstudents', userController.viewallstudents);
 router.post('/adduser', userController.adduser);
+router.post('/deleteuser', userController.deleteuser);
+router.post('/edituser', userController.edituser);
 
 module.exports = router;

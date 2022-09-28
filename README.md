@@ -16,7 +16,6 @@ Reqeust Handling: Express
     cors: 2.8.5<br/>
     dotenv: 16.0.2<br/>
     express: 4.18.1<br/>
-    mysql: latest<br/>
-    (if this doesn't work, use mysql2)
+    mysql: latest (if this doesn't work, use mysql2)<br/>
     nodemon: 2.0.20
 2. node index.js
