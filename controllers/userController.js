@@ -13,7 +13,7 @@ const connection = mysql.createConnection({
 
 connection.connect(
   function (err) {
-    if (err) throw err;
+    if (err) throw err;``
     console.log("Connected!");
   });
 
@@ -24,9 +24,9 @@ exports.viewallusers = async (req, res) => {
   connection.promise().query(query)
     .then(data => {
       message = "view user success";
-      res.status(200).send({ message: message, data: data[0] })
+      res.send({ status: SUCCESS })
     })
-    .catch(error => res.status(400).send({ message: message, error: error }));
+    .catch(error => res.send({status: SUCCESS, error: error }));
 };
 
 //get all first year students, return a json object
@@ -36,9 +36,9 @@ exports.viewallstudents = async (req, res) => {
   connection.promise().query(query)
     .then(data => {
       message = "view user success";
-      res.status(200).send({ message: message, data: data[0] })
+      res.send({ message: message, data: data[0] })
     })
-    .catch(error => res.status(400).send({ message: message, error: error }));
+    .catch(error => res.send({ message: message, error: error }));
 };
 
 //add one user
@@ -53,11 +53,11 @@ exports.adduser = async (req, res) => {
     .then(data => {
       if (data[0].affectedRows) {
         message = 'user created successfully';
-        res.status(200).send({ message: message, data: data[0] });
+        res.send({ message: message, data: data[0] });
       }
     })
     .catch(error => {
-      res.status(400).send({ message: message, error: error });
+      res.send({ message: message, error: error });
     });
 };
 
@@ -72,11 +72,11 @@ exports.deleteuser = async (req, res) => {
     .then(data => {
       if (data[0].affectedRows) {
         message = 'user deleted successfully';
-        res.status(200).send({ message: message, data: data[0] });
+        res.send({ message: message, data: data[0] });
       }
     })
     .catch(error => {
-      res.status(400).send({ message: message, error: error });
+      res.send({ message: message, error: error });
     });
 
   return res;
@@ -95,47 +95,41 @@ exports.edituser = async (req, res) => {
       if (data[0].affectedRows) {
         message = 'user edited successfully';
         console.log(message);
-        res.status(200).send({ message: message, data: data[0] });
+        res.send({ message: message, data: data[0] });
       }
     })
     .catch(error => {
-      res.status(400).send({ message: message, error: error });
+      res.send({ message: message, error: error });
     });
 };
 
 
 //load with csv file
 exports.loadfromcsv = async (req, res) => {
-  const file = req.file;
+  const { file } = req.body;
 
-  csv().fromFile(file.path)
-    .then(source => {
-      // Fetching the data from each row 
-      // and inserting to the table "sample"
-      for (var i = 0; i < source.length; i++) {
-        var email = source[i]["email"],
-          name = source[i]["name"],
-          type = source[i]["type"],
-          visions = source[i]["visions"];
+  // Fetching the data from each row 
+  // and inserting to the table "sample"
+  for (var i = 0; i < file.length; i++) {
+    var email = file[i]["email"],
+      name = file[i]["name"],
+      type = file[i]["type"],
+      visions = file[i]["visions"];
 
-        const query = `INSERT INTO users 
+    const query = `INSERT INTO users 
         (email, name, type, status, visions)
         VALUES (?,?,?,'unregistered',?)`;
 
-        const body = [email, name, type, visions];
+    const body = [email, name, type, visions];
 
-        // Insert row to database
-        connection.promise().query(query, body)
-          .catch(error => {
-            console.log("ERROR");
-            message = 'ERROR: user creation failed';
-            res.status(400).send({ message: message, error: error });
-          });
+    // Insert row to databae
+    connection.promise().query(query, body)
+      .catch(error => {
+        message = 'ERROR: user creation failed';
+        res.send({ message: message, error: error });
+      });
+  }
 
-      }
-
-      message = 'user created successfully';
-      res.status(200).send({ message: message });
-    }
-    );
+  message = 'user created successfully';
+  res.send({ message: message });
 };
