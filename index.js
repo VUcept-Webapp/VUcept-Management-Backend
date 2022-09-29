@@ -7,6 +7,8 @@ require('dotenv').config();
 const app = express();
 const port = process.env.PORT || 8080;
 
+global.__basedir = __dirname + "/..";
+
 // enable sharing of API calls
 app.use(cors());
 
