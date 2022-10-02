@@ -1,6 +1,18 @@
 const mysql = require('mysql2');
 const fs = require("fs");
 const csv = require('csvtojson');
+const { insertUser } = require('../models/userManagement');
+const { STATUS_CODE } = require('../lib/constants');
+
+//remember search conditions
+// const user_conditions = {
+//   //camel case
+//   nameSort, name_search, email_sort, email_search, visions_sort, visions_filter, status_filter, type_filter
+// }
+
+// const attendance_conditions = {
+//   week_sort, week_filter
+// }
 
 // Connection Pool
 const connection = mysql.createConnection({
@@ -17,17 +29,7 @@ connection.connect(
     console.log("Connected!");
   });
 
-//get all users, return a json object
-exports.viewallusers = async (req, res) => {
-  let message = "view user failed";
-  const query = 'SELECT * FROM users';
-  connection.promise().query(query)
-    .then(data => {
-      message = "view user success";
-      res.send({ status: SUCCESS })
-    })
-    .catch(error => res.send({status: SUCCESS, error: error }));
-};
+
 
 //get all first year students, return a json object
 exports.viewallstudents = async (req, res) => {
@@ -41,67 +43,11 @@ exports.viewallstudents = async (req, res) => {
     .catch(error => res.send({ message: message, error: error }));
 };
 
-//add one user
-exports.adduser = async (req, res) => {
-  const { email, name, type, visions } = req.body;
-  let message = 'Error in creating user';
-  const query = `INSERT INTO users 
-  (email, name, type, status, visions)
-  VALUES (?,?,?,'unregistered',?)`;
 
-  connection.promise().query(query, [email, name, type, visions])
-    .then(data => {
-      if (data[0].affectedRows) {
-        message = 'user created successfully';
-        res.send({ message: message, data: data[0] });
-      }
-    })
-    .catch(error => {
-      res.send({ message: message, error: error });
-    });
-};
 
-//delete one user
-exports.deleteuser = async (req, res) => {
-  const { email } = req.body.email;
-  let message = 'Error in deleting user';
-  const query = `DELETE FROM users 
-  WHERE email = ?;`;
 
-  connection.promise().query(query, email)
-    .then(data => {
-      if (data[0].affectedRows) {
-        message = 'user deleted successfully';
-        res.send({ message: message, data: data[0] });
-      }
-    })
-    .catch(error => {
-      res.send({ message: message, error: error });
-    });
 
-  return res;
-};
 
-//edit one user
-exports.edituser = async (req, res) => {
-  const { email, name, type, visions } = req.body;
-  let message = 'Error in editing user';
-  const query = `UPDATE users 
-  SET name = ?, type = ?, visions = ?
-  WHERE email = ?`;
-
-  connection.promise().query(query, [name, type, visions, email])
-    .then(data => {
-      if (data[0].affectedRows) {
-        message = 'user edited successfully';
-        console.log(message);
-        res.send({ message: message, data: data[0] });
-      }
-    })
-    .catch(error => {
-      res.send({ message: message, error: error });
-    });
-};
 
 
 //load with csv file
@@ -133,3 +79,15 @@ exports.loadfromcsv = async (req, res) => {
   message = 'user created successfully';
   res.send({ message: message });
 };
+
+exports.addUser = async (req, res) => {
+  try {
+    await insertUser(req.body);
+    console.log(req.body);
+  } catch(err) {
+    console.log(err);
+    res.send({ status: STATUS_CODE.ERROR });
+  }
+  console.log('success');
+  res.send({ status: STATUS_CODE.SUCCESS});
+}
