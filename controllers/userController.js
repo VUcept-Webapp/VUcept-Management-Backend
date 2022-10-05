@@ -14,22 +14,26 @@ exports.insertUser = ({ email, name, type, visions }) => {
   })
 }
 
-exports.verifyUser = ({ email }) => {
-  const queryCheck = 'SELECT 1 FROM users WHERE email = ?';
+exports.verifyUser = ( email ) => {
+  const queryCheck = 'SELECT COUNT(email) AS NUM FROM users WHERE email = ?';
+  console.log("email in verify: " + email);
+  const tmp = email.old_email;
+  console.log("tmp: " + tmp);
+  
 
   return new Promise ((resolve, reject) => {
     connection.query(queryCheck, email, (err, res) => {
       if (err) reject(err);
-      else resolve(res);
+      else resolve(res[0]);
     })
   });
 }
 
-exports.removeUser = ({ email }) => {
-  const query = `DELETE FROM users WHERE email = ` + email;
+exports.removeUser = ( email ) => {
+  const query = `DELETE FROM users WHERE email = ?`;
 
   return new Promise((resolve, reject) => {
-    connection.query(query, (err, res) => {
+    connection.query(query, email, (err, res) => {
       if (err) reject(err);
       else resolve(res);
     })
@@ -67,20 +71,21 @@ exports.createUser = async (req, res) => {
   const { email, name, type, visions } = req.body;
 
   try {
-    let verify = await this.verifyUser({ email });
-    if (verify[0] > 0) {
+    let verify = await this.verifyUser( email );
+    if (verify.NUM > 0) {
       return res.send({ status: STATUS_CODE.EMAIL_USED, message: email });
     }
 
     let result = await this.insertUser(req.body);
-    if (result[0].affectedRows) {
+    
+    if (result.affectedRows) {
       return res.send({ status: STATUS_CODE.SUCCESS });
     }
   } catch (error) {
-    return res.send({ status: ERROR, message: error });
+    return res.send({ status: STATUS_CODE.ERROR, message: error });
   }
 
-  return res.send({ status: ERROR });
+  return res.send({ status: STATUS_CODE.ERROR });
 };
 
 //get all first year students, return a json object
@@ -115,7 +120,7 @@ exports.readUser = async (req, res) => {
   }
 
   // create where string
-  const where = '';
+  var where = '';
   const where_list = [name_search, email_search, visions_filter, status_filter, type_filter];
   where_list.forEach(cond => {
     if(cond !== ''){
@@ -127,7 +132,7 @@ exports.readUser = async (req, res) => {
     }
   })
 
-  const orderby = '';
+  var orderby = '';
   const orderby_list = [name_sort, email_sort, visions_sort];
   orderby_list.forEach(order => {
     if(order !== ''){
@@ -151,7 +156,7 @@ exports.readUser = async (req, res) => {
 
   try {
     let result = await viewusers;
-    res.send({ status: STATUS_CODE.SUCCESS, message: result[0]})
+    res.send({ status: STATUS_CODE.SUCCESS, message: result})
   } catch (error) {
     return res.send({ status: STATUS_CODE.ERROR, message: error });
   }
@@ -159,15 +164,18 @@ exports.readUser = async (req, res) => {
 
 //delete one user
 exports.deleteUser = async (req, res) => {
-
   try{
-    let verify = await this.verifyUser( req.body.email );
-    if(!verify[0]){
-      return res.send({ status: STATUS_CODE.INCORRECT_USER_EMAIL });
+    const email = req.body.email;
+   
+    let verify = await this.verifyUser( email );
+
+    if (verify.NUM == 0) {
+      return res.send({ status: STATUS_CODE.INCORRECT_USER_EMAIL, message: email });
     }
 
-    let result = await this.removeUser( req.body.email );
-    if (result[0].affectedRows){
+    let result = await this.removeUser( email );
+
+    if (result.affectedRows){
       return res.send({ status: STATUS_CODE.SUCCESS });
     }
   } catch (error) {
@@ -183,17 +191,20 @@ exports.updateUser = async (req, res) => {
 
   try{
     let verify = await this.verifyUser( old_email );
-    if(!verify[0]){
-      return res.send({ status: STATUS_CODE.INCORRECT_USER_EMAIL });
+    
+    console.log(verify);
+
+    if (verify.NUM == 0) {
+      return res.send({ status: STATUS_CODE.INCORRECT_USER_EMAIL, message: old_email });
     }
 
     let remove = await this.removeUser( old_email );
-    // if (remove[0].affectedRows){
-    //   console.log("User update in process...");
-    // }
+    if (remove.affectedRows){
+      console.log('update in process....');
+    }
 
     let result = await this.insertUser({ email, name, type, visions });
-    if (result[0].affectedRows) {
+    if (result.affectedRows) {
       return res.send({ status: STATUS_CODE.SUCCESS });
     }
   } catch (error){
