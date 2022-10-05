@@ -16,10 +16,6 @@ exports.insertUser = ({ email, name, type, visions }) => {
 
 exports.verifyUser = ( email ) => {
   const queryCheck = 'SELECT COUNT(email) AS NUM FROM users WHERE email = ?';
-  console.log("email in verify: " + email);
-  const tmp = email.old_email;
-  console.log("tmp: " + tmp);
-  
 
   return new Promise ((resolve, reject) => {
     connection.query(queryCheck, email, (err, res) => {
@@ -53,8 +49,8 @@ exports.loadfruserLoadfromcsvomcsv = async (req, res) => {
       visions = file[i]["visions"];
 
     try {
-      let verify = await this.verifyUser({ email });
-      if (verify[0] > 0) {
+      let verify = await this.verifyUser( email );
+      if (verify.NUM > 0) {
         return res.send({ status: STATUS_CODE.EMAIL_USED, message: email });
       }
       await this.insertUser({ email, name, type, visions });
@@ -76,7 +72,7 @@ exports.createUser = async (req, res) => {
       return res.send({ status: STATUS_CODE.EMAIL_USED, message: email });
     }
 
-    let result = await this.insertUser(req.body);
+    let result = await this.insertUser({ email, name, type, visions });
     
     if (result.affectedRows) {
       return res.send({ status: STATUS_CODE.SUCCESS });
@@ -90,7 +86,7 @@ exports.createUser = async (req, res) => {
 
 //get all first year students, return a json object
 exports.readUser = async (req, res) => {
-  const name_sort = (!req.query.name_sort) ? ' name ' : ' name ' + req.query.name_sort;
+  const name_sort = (!req.query.name_sort) ? ' name ASC' : ' name ' + req.query.name_sort;
   const name_search = (!req.query.name_search) ? '' : ' name = ' + req.query.name_search;
   const email_sort = (!req.query.email_sort) ? '' : ' email ' + req.query.email_sort;
   const email_search = (!req.query.email_search) ? '' : ' email = ' + req.query.email_search;
@@ -103,19 +99,22 @@ exports.readUser = async (req, res) => {
 
   // check parameters
   const sort_list = [req.query.name_sort, req.query.email_sort, req.query.visions_sort];
-  sort_list.forEach(sort => {
-    if (sort && (sort !== SORT_ORDER.ASC) && (sort !== SORT_ORDER.DESC)){
+  for (var i = 0; i < sort_list.length; ++i){
+    if (sort_list[i] && (sort_list[i] !== SORT_ORDER.ASC) && (sort_list[i] !== SORT_ORDER.DESC)){
+      console.log("SORT ERROR\n");
       return res.send({ status: STATUS_CODE.UNKNOWN_SORT });
     }
-  })
+  }
 
   if ((req.query.status_filter) && (req.query.status_filter !== REGISTRATION_STATUS.REGISTERED) && 
   (req.query.status_filter !== REGISTRATION_STATUS.UNREGISTERED)){
+    console.log("STATUS ERROR\n");
     return res.send({ status: STATUS_CODE.INCORRECT_STATUS });
   }
 
   if ((req.query.type_filter) && (req.query.type_filter !== TYPE.VUCEPTOR) && (req.query.type_filter !== TYPE.ADVISER)
   && (req.query.type_filter !== TYPE.BOARD)){
+    console.log("TYPE ERROR\n");
     return res.send({ status: STATUS_CODE.INCORRECT_TYPE });
   }
 
@@ -125,9 +124,9 @@ exports.readUser = async (req, res) => {
   where_list.forEach(cond => {
     if(cond !== ''){
       if (where !== ''){
-        where = where + ' AND ' + cond;
+        where = where + ' AND' + cond;
       } else {
-        where = ' WHERE ' + cond;
+        where = ' WHERE' + cond;
       }
     }
   })
@@ -137,14 +136,14 @@ exports.readUser = async (req, res) => {
   orderby_list.forEach(order => {
     if(order !== ''){
       if (orderby !== ''){
-        orderby = orderby + ' AND ' + order;
+        orderby = orderby + ' ,' + order;
       } else {
-        orderby = ' ORDER BY ' + order;
+        orderby = ' ORDER BY' + order;
       }
     }
   })
   
-  const query = 'SELECT name, email, visions, type, status FROM users' + orderby + where +
+  const query = 'SELECT name, email, visions, type, status FROM users' +  where + orderby +
   ' LIMIT ' + row_num + ' OFFSET ' + row_start;
 
   const viewusers = new Promise((resolve, reject) => {
@@ -156,7 +155,7 @@ exports.readUser = async (req, res) => {
 
   try {
     let result = await viewusers;
-    res.send({ status: STATUS_CODE.SUCCESS, message: result})
+    return res.send({ status: STATUS_CODE.SUCCESS, message: result})
   } catch (error) {
     return res.send({ status: STATUS_CODE.ERROR, message: error });
   }
