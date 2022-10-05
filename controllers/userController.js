@@ -2,7 +2,9 @@ const mysql = require('mysql2');
 const fs = require("fs");
 const csv = require('csvtojson');
 const { insertUser } = require('../models/userManagement');
-const { STATUS_CODE } = require('../lib/constants');
+const { STATUS_CODE, LOG_IN_STATUS, transport } = require('../lib/constants');
+// const { connection } = require ('../models/model');
+
 
 //remember search conditions
 // const user_conditions = {
@@ -14,7 +16,6 @@ const { STATUS_CODE } = require('../lib/constants');
 //   week_sort, week_filter
 // }
 
-// Connection Pool
 const connection = mysql.createConnection({
   host: process.env.RDS_HOSTNAME,
   user: process.env.RDS_USERNAME,
@@ -25,11 +26,9 @@ const connection = mysql.createConnection({
 
 connection.connect(
   function (err) {
-    if (err) throw err;``
-    console.log("Connected!");
+      if (err) throw err; ``
+      console.log("Connected!");
   });
-
-
 
 //get all first year students, return a json object
 exports.viewallstudents = async (req, res) => {
@@ -42,12 +41,6 @@ exports.viewallstudents = async (req, res) => {
     })
     .catch(error => res.send({ message: message, error: error }));
 };
-
-
-
-
-
-
 
 
 //load with csv file
@@ -90,4 +83,45 @@ exports.addUser = async (req, res) => {
   }
   console.log('success');
   res.send({ status: STATUS_CODE.SUCCESS});
+}
+
+exports.login = async (req, res) => {
+  const query = `SELECT * FROM users WHERE email = ?`;
+  const {email, password, code, originalCode} = req.body;
+  connection.promise().query(query, [email.toLowerCase()])
+    .then(data => {
+      if (!!data) {
+        res.send({status: LOG_IN_STATUS.INVALID_EMAIL});
+      } else if (data['status'] === 'unregistered'){
+        res.send({status: LOG_IN_STATUS.REQUEST_SIGN_UP});
+      } else if (data['password'] === password && code === originalCode){
+        res.send({ status: LOG_IN_STATUS.SUCCESS});
+      } else if (data['password'] === password){
+        res.send({ status: LOG_IN_STATUS.INVALID_CODE});
+      } else if (code === originalCode){
+        res.send({ status: LOG_IN_STATUS.INVALID_PASSWORD});
+      }
+    })
+    .catch(error => {
+      console.log(error);
+      res.send({status: STATUS_CODE.ERROR});
+    });
+
+}
+
+exports.sendEmail = async (req, res) =>{
+  const code = Math.floor(100000 + Math.random() * 900000);
+  const mailOptions = {
+    from: process.env.MAIL_EMAIL,
+    to: req.body.email,
+    subject: 'VUcept Management Verification Code',
+    text: 'Please enter the following verification code: ' + code
+  };
+  transport.sendMail(mailOptions, (error, info) => {
+    if (error) {
+      res.send({status: STATUS_CODE.ERROR});
+    } else {
+      res.send({status: STATUS_CODE.SUCCESS, code: code})
+    }
+  });
 }

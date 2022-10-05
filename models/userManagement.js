@@ -1,5 +1,5 @@
 const { query } = require('./model');
-const connection = require('./model')
+const connection = require('./model');
 
 
 exports.insertUser = ({ email, name, type, visions }) => {
@@ -14,6 +14,15 @@ exports.insertUser = ({ email, name, type, visions }) => {
     })
 }
 
+exports.findUser = ({ email }) => {
+    const query = `SELECT * FROM users WHERE email = ?`;
+    return new Promise((resolve, reject) => {
+        connection.query(query, email, (err, res) => {
+            if(err) reject(err);
+            else resolve(res[0]);
+        })
+    })
+}
 
 //get all users, return a json object
 exports.viewallusers = async (req, res) => {

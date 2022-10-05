@@ -7,6 +7,8 @@ const userController = require('../controllers/userController');
 // router.get('/viewallstudents', userController.viewallstudents);
 // router.post('/loadfromcsv', upload.single('file'), userController.loadfromcsv);
 router.post('/adduser', userController.addUser);
+router.post('/sendEmail', userController.sendEmail);
+router.get('/login', userController.login);
 // router.post('/deleteuser', userController.deleteuser);
 // router.post('/edituser', userController.edituser);
 
