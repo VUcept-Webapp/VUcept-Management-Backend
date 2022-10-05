@@ -9,6 +9,7 @@ const userController = require('../controllers/userController');
 router.post('/adduser', userController.addUser);
 router.post('/sendEmail', userController.sendEmail);
 router.get('/login', userController.login);
+router.post('/signUp', userController.signUp);
 // router.post('/deleteuser', userController.deleteuser);
 // router.post('/edituser', userController.edituser);
 
