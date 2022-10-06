@@ -3,6 +3,27 @@ const crypto = require('crypto');
 const { STATUS_CODE, SORT_ORDER, TYPE, REGISTRATION_STATUS } = require('../lib/constants');
 const connection = require('../models/connection');
 
+//reset the entire database and delete all information
+exports.resetDatabase = async (req, res) => {
+  const query = `DELETE FROM users;` + 'DELETE FROM students;' + 'DELETE FROM student_attendance;' +
+  `DELETE FROM student_events;` + 'DELETE FROM vuceptor_events;' + 'DELETE FROM vuceptor_attendance;';
+
+  const reset = new Promise((resolve, reject) => {
+    connection.query(query, (err, res) => {
+      if (err) reject(err);
+      else resolve(res);
+    })
+  });
+
+  try{
+    await reset;
+  } catch (error){
+    return res.send({ status: STATUS_CODE.ERROR, result: error });
+  }
+
+  return res.send({ status: STATUS_CODE.ERROR });
+};
+
 // Shared functions
 exports.insertUser = ({ email, name, type, visions }) => {
   const query = `INSERT INTO users (email, name, type, status, visions) VALUES (?,?,?,'unregistered',?)`;
@@ -40,6 +61,7 @@ exports.removeUser = ( email ) => {
 //load with csv file
 exports.loadfruserLoadfromcsvomcsv = async (req, res) => {
   const { file } = req.body;
+  var duplicates = [];
 
   // Fetching the data from each row 
   // and inserting to the table "sample"
@@ -52,15 +74,21 @@ exports.loadfruserLoadfromcsvomcsv = async (req, res) => {
     try {
       let verify = await this.verifyUser( email );
       if (verify.NUM > 0) {
-        return res.send({ status: STATUS_CODE.EMAIL_USED, message: email });
+        duplicates.push(email);
+      } else{
+        await this.insertUser({ email, name, type, visions });
       }
-      await this.insertUser({ email, name, type, visions });
     } catch (error) {
-      return res.send({ status: STATUS_CODE.ERROR, message: error });
+      return res.send({ status: STATUS_CODE.ERROR, result: error });
     }
   }
 
-  return res.send({ status: STATUS_CODE.SUCCESS });
+  if(duplicates.length == 0){
+    return res.send({ status: STATUS_CODE.SUCCESS });
+  } else{
+    return res.send({ status: STATUS_CODE.EMAIL_USED, result: duplicates });
+  }
+  
 };
 
 //add one user
@@ -70,7 +98,7 @@ exports.createUser = async (req, res) => {
   try {
     let verify = await this.verifyUser( email );
     if (verify.NUM > 0) {
-      return res.send({ status: STATUS_CODE.EMAIL_USED, message: email });
+      return res.send({ status: STATUS_CODE.EMAIL_USED, result: email });
     }
 
     let result = await this.insertUser({ email, name, type, visions });
@@ -79,7 +107,7 @@ exports.createUser = async (req, res) => {
       return res.send({ status: STATUS_CODE.SUCCESS });
     }
   } catch (error) {
-    return res.send({ status: STATUS_CODE.ERROR, message: error });
+    return res.send({ status: STATUS_CODE.ERROR, result: error });
   }
 
   return res.send({ status: STATUS_CODE.ERROR });
@@ -96,7 +124,7 @@ exports.readUser = async (req, res) => {
   const status_filter = (!req.query.status_filter) ? '' : ' status = ' + req.query.status_filter;
   const type_filter = (!req.query.type_filter) ? '' : ' type = ' + req.query.type_filter;
   const row_start = (!req.query.row_start) ? 0 : req.query.row_start;
-  const row_num = (!req.query.row_end) ? 10 : req.query.row_end;
+  const row_num = (!req.query.row_num) ? 10 : req.query.row_num;
 
   // check parameters
   const sort_list = [req.query.name_sort, req.query.email_sort, req.query.visions_sort];
@@ -156,9 +184,9 @@ exports.readUser = async (req, res) => {
 
   try {
     let result = await viewusers;
-    return res.send({ status: STATUS_CODE.SUCCESS, message: result})
+    return res.send({ status: STATUS_CODE.SUCCESS, result: result})
   } catch (error) {
-    return res.send({ status: STATUS_CODE.ERROR, message: error });
+    return res.send({ status: STATUS_CODE.ERROR, result: error });
   }
 };
 
@@ -170,7 +198,7 @@ exports.deleteUser = async (req, res) => {
     let verify = await this.verifyUser( email );
 
     if (verify.NUM == 0) {
-      return res.send({ status: STATUS_CODE.INCORRECT_USER_EMAIL, message: email });
+      return res.send({ status: STATUS_CODE.INCORRECT_USER_EMAIL, result: email });
     }
 
     let result = await this.removeUser( email );
@@ -179,7 +207,7 @@ exports.deleteUser = async (req, res) => {
       return res.send({ status: STATUS_CODE.SUCCESS });
     }
   } catch (error) {
-    return res.send({ status: STATUS_CODE.ERROR, message: error });
+    return res.send({ status: STATUS_CODE.ERROR, result: error });
   }
   console.log('success');
   return res.send({ status: STATUS_CODE.SUCCESS});
@@ -287,7 +315,7 @@ exports.updateUser = async (req, res) => {
     console.log(verify);
 
     if (verify.NUM == 0) {
-      return res.send({ status: STATUS_CODE.INCORRECT_USER_EMAIL, message: old_email });
+      return res.send({ status: STATUS_CODE.INCORRECT_USER_EMAIL, result: old_email });
     }
 
     let remove = await this.removeUser( old_email );
@@ -300,7 +328,7 @@ exports.updateUser = async (req, res) => {
       return res.send({ status: STATUS_CODE.SUCCESS });
     }
   } catch (error){
-    return res.send({ status: STATUS_CODE.ERROR, message: error });
+    return res.send({ status: STATUS_CODE.ERROR, result: error });
   }
 
   return res.send({ status: STATUS_CODE.ERROR });
