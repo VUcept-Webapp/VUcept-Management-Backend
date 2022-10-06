@@ -1,51 +1,44 @@
-const mysql = require('mysql2');
 const fs = require("fs");
-const csv = require('csvtojson');
-const { insertUser } = require('../models/userManagement');
-const { STATUS_CODE, LOG_IN_STATUS, transport, SIGN_UP_STATUS, REGISTRATION_STATUS } = require('../lib/constants');
 const crypto = require('crypto'); 
-// const { connection } = require ('../models/model');
+const { STATUS_CODE, SORT_ORDER, TYPE, REGISTRATION_STATUS } = require('../lib/constants');
+const connection = require('../models/connection');
 
+// Shared functions
+exports.insertUser = ({ email, name, type, visions }) => {
+  const query = `INSERT INTO users (email, name, type, status, visions) VALUES (?,?,?,'unregistered',?)`;
 
-//remember search conditions
-// const user_conditions = {
-//   //camel case
-//   nameSort, name_search, email_sort, email_search, visions_sort, visions_filter, status_filter, type_filter
-// }
-
-// const attendance_conditions = {
-//   week_sort, week_filter
-// }
-
-const connection = mysql.createConnection({
-  host: process.env.RDS_HOSTNAME,
-  user: process.env.RDS_USERNAME,
-  password: process.env.RDS_PASSWORD,
-  port: process.env.RDS_PORT,
-  database: process.env.RDS_DATABASE
-});
-
-connection.connect(
-  function (err) {
-      if (err) throw err; ``
-      console.log("Connected!");
-  });
-
-//get all first year students, return a json object
-exports.viewallstudents = async (req, res) => {
-  let message = "view user failed";
-  const query = 'SELECT * FROM students';
-  connection.promise().query(query)
-    .then(data => {
-      message = "view user success";
-      res.send({ message: message, data: data[0] })
+  return new Promise((resolve, reject) => {
+    connection.query(query, [email, name, type, visions], (err, res) => {
+      if (err) reject(err);
+      else resolve(res);
     })
-    .catch(error => res.send({ message: message, error: error }));
-};
+  })
+}
 
+exports.verifyUser = ( email ) => {
+  const queryCheck = 'SELECT COUNT(email) AS NUM FROM users WHERE email = ?';
+
+  return new Promise ((resolve, reject) => {
+    connection.query(queryCheck, email, (err, res) => {
+      if (err) reject(err);
+      else resolve(res[0]);
+    })
+  });
+}
+
+exports.removeUser = ( email ) => {
+  const query = `DELETE FROM users WHERE email = ?`;
+
+  return new Promise((resolve, reject) => {
+    connection.query(query, email, (err, res) => {
+      if (err) reject(err);
+      else resolve(res);
+    })
+  });
+}
 
 //load with csv file
-exports.loadfromcsv = async (req, res) => {
+exports.loadfruserLoadfromcsvomcsv = async (req, res) => {
   const { file } = req.body;
 
   // Fetching the data from each row 
@@ -56,34 +49,140 @@ exports.loadfromcsv = async (req, res) => {
       type = file[i]["type"],
       visions = file[i]["visions"];
 
-    const query = `INSERT INTO users 
-        (email, name, type, status, visions)
-        VALUES (?,?,?,'unregistered',?)`;
-
-    const body = [email, name, type, visions];
-
-    // Insert row to databae
-    connection.promise().query(query, body)
-      .catch(error => {
-        message = 'ERROR: user creation failed';
-        res.send({ message: message, error: error });
-      });
+    try {
+      let verify = await this.verifyUser( email );
+      if (verify.NUM > 0) {
+        return res.send({ status: STATUS_CODE.EMAIL_USED, message: email });
+      }
+      await this.insertUser({ email, name, type, visions });
+    } catch (error) {
+      return res.send({ status: STATUS_CODE.ERROR, message: error });
+    }
   }
 
-  message = 'user created successfully';
-  res.send({ message: message });
+  return res.send({ status: STATUS_CODE.SUCCESS });
 };
 
-exports.addUser = async (req, res) => {
+//add one user
+exports.createUser = async (req, res) => {
+  const { email, name, type, visions } = req.body;
+
   try {
-    await insertUser(req.body);
-    console.log(req.body);
-  } catch(err) {
-    console.log(err);
-    res.send({ status: STATUS_CODE.ERROR });
+    let verify = await this.verifyUser( email );
+    if (verify.NUM > 0) {
+      return res.send({ status: STATUS_CODE.EMAIL_USED, message: email });
+    }
+
+    let result = await this.insertUser({ email, name, type, visions });
+    
+    if (result.affectedRows) {
+      return res.send({ status: STATUS_CODE.SUCCESS });
+    }
+  } catch (error) {
+    return res.send({ status: STATUS_CODE.ERROR, message: error });
+  }
+
+  return res.send({ status: STATUS_CODE.ERROR });
+};
+
+//get all first year students, return a json object
+exports.readUser = async (req, res) => {
+  const name_sort = (!req.query.name_sort) ? ' name ASC' : ' name ' + req.query.name_sort;
+  const name_search = (!req.query.name_search) ? '' : ' name = ' + req.query.name_search;
+  const email_sort = (!req.query.email_sort) ? '' : ' email ' + req.query.email_sort;
+  const email_search = (!req.query.email_search) ? '' : ' email = ' + req.query.email_search;
+  const visions_sort = (!req.query.visions_sort) ? '' : ' visions ' + req.query.visions_sort;
+  const visions_filter = (!req.query.visions_filter) ? '' : ' visions = ' + req.query.visions_filter;
+  const status_filter = (!req.query.status_filter) ? '' : ' status = ' + req.query.status_filter;
+  const type_filter = (!req.query.type_filter) ? '' : ' type = ' + req.query.type_filter;
+  const row_start = (!req.query.row_start) ? 0 : req.query.row_start;
+  const row_num = (!req.query.row_end) ? 10 : req.query.row_end;
+
+  // check parameters
+  const sort_list = [req.query.name_sort, req.query.email_sort, req.query.visions_sort];
+  for (var i = 0; i < sort_list.length; ++i){
+    if (sort_list[i] && (sort_list[i] !== SORT_ORDER.ASC) && (sort_list[i] !== SORT_ORDER.DESC)){
+      console.log("SORT ERROR\n");
+      return res.send({ status: STATUS_CODE.UNKNOWN_SORT });
+    }
+  }
+
+  if ((req.query.status_filter) && (req.query.status_filter !== REGISTRATION_STATUS.REGISTERED) && 
+  (req.query.status_filter !== REGISTRATION_STATUS.UNREGISTERED)){
+    console.log("STATUS ERROR\n");
+    return res.send({ status: STATUS_CODE.INCORRECT_STATUS });
+  }
+
+  if ((req.query.type_filter) && (req.query.type_filter !== TYPE.VUCEPTOR) && (req.query.type_filter !== TYPE.ADVISER)
+  && (req.query.type_filter !== TYPE.BOARD)){
+    console.log("TYPE ERROR\n");
+    return res.send({ status: STATUS_CODE.INCORRECT_TYPE });
+  }
+
+  // create where string
+  var where = '';
+  const where_list = [name_search, email_search, visions_filter, status_filter, type_filter];
+  where_list.forEach(cond => {
+    if(cond !== ''){
+      if (where !== ''){
+        where = where + ' AND' + cond;
+      } else {
+        where = ' WHERE' + cond;
+      }
+    }
+  })
+
+  var orderby = '';
+  const orderby_list = [name_sort, email_sort, visions_sort];
+  orderby_list.forEach(order => {
+    if(order !== ''){
+      if (orderby !== ''){
+        orderby = orderby + ' ,' + order;
+      } else {
+        orderby = ' ORDER BY' + order;
+      }
+    }
+  })
+  
+  const query = 'SELECT name, email, visions, type, status FROM users' +  where + orderby +
+  ' LIMIT ' + row_num + ' OFFSET ' + row_start;
+
+  const viewusers = new Promise((resolve, reject) => {
+    connection.query(query, (err, res) => {
+      if (err) reject(err);
+      else resolve(res);
+    })
+  });
+
+  try {
+    let result = await viewusers;
+    return res.send({ status: STATUS_CODE.SUCCESS, message: result})
+  } catch (error) {
+    return res.send({ status: STATUS_CODE.ERROR, message: error });
+  }
+};
+
+//delete one user
+exports.deleteUser = async (req, res) => {
+  try{
+    const email = req.body.email;
+   
+    let verify = await this.verifyUser( email );
+
+    if (verify.NUM == 0) {
+      return res.send({ status: STATUS_CODE.INCORRECT_USER_EMAIL, message: email });
+    }
+
+    let result = await this.removeUser( email );
+
+    if (result.affectedRows){
+      return res.send({ status: STATUS_CODE.SUCCESS });
+    }
+  } catch (error) {
+    return res.send({ status: STATUS_CODE.ERROR, message: error });
   }
   console.log('success');
-  res.send({ status: STATUS_CODE.SUCCESS});
+  return res.send({ status: STATUS_CODE.SUCCESS});
 }
 
 exports.login = async (req, res) => {
@@ -92,18 +191,18 @@ exports.login = async (req, res) => {
   connection.promise().query(query, [email.toLowerCase()])
     .then(data => {
       if (data[0].length === 0) {
-        return res.send({status: LOG_IN_STATUS.INVALID_EMAIL});
+        return res.send({status: STATUS_CODE.INVALID_EMAIL});
       } else if (data[0][0].status === REGISTRATION_STATUS.UNREGISTERED){
-        return res.send({status: LOG_IN_STATUS.REQUEST_SIGN_UP});
+        return res.send({status: STATUS_CODE.REQUEST_SIGN_UP});
       } else if (code === originalCode){
         const inputPassword = hashPassword(password, data[0][0].salt);
         if (inputPassword === data[0][0].hash){
-          return res.send({ status: LOG_IN_STATUS.SUCCESS});
+          return res.send({ status: STATUS_CODE.SUCCESS});
         } else {
-          return res.send({status: LOG_IN_STATUS.INVALID_PASSWORD});
+          return res.send({status: STATUS_CODE.INVALID_PASSWORD});
         }
       } else {
-        return res.send({ status: LOG_IN_STATUS.INVALID_CODE});
+        return res.send({ status: STATUS_CODE.INVALID_CODE});
       }
     })
     .catch(error => {
@@ -112,7 +211,7 @@ exports.login = async (req, res) => {
     });
 }
 
-exports.sendEmail = async (req, res) =>{
+exports.sendVerificationEmail = async (req, res) =>{
   const code = Math.floor(100000 + Math.random() * 900000);
   const mailOptions = {
     from: process.env.MAIL_EMAIL,
@@ -133,7 +232,7 @@ exports.signUp = async (req, res) => {
   const {password, code, originalCode, email} = req.body;
   //check for verification code
   if (code !== originalCode) {
-    return res.send({status: SIGN_UP_STATUS.INVALID_CODE});
+    return res.send({status: STATUS_CODE.INVALID_CODE});
   }
   //check for user status 
   const queryEmail = `SELECT * FROM users WHERE email = ?`;
@@ -141,11 +240,11 @@ exports.signUp = async (req, res) => {
   .then(data => {
     if (data[0].length === 0) {
       console.log(data[0])
-      return res.send({status: SIGN_UP_STATUS.INVALID_EMAIL});
+      return res.send({status: STATUS_CODE.INVALID_EMAIL});
     } else {
       //data[0][0] contains the actual json object that gets returned by mysql
       if (data[0][0].status !== REGISTRATION_STATUS.UNREGISTERED){
-        return res.send({status : SIGN_UP_STATUS.USER_EXISTENT});
+        return res.send({status : STATUS_CODE.USER_EXISTENT});
       }
     }
   })
@@ -167,6 +266,7 @@ exports.signUp = async (req, res) => {
     }
   })
   .catch(error => {
+    console.log(error);
     return res.send({ status: STATUS_CODE.ERROR});
   });
 }
@@ -177,6 +277,31 @@ function hashPassword (password, salt) {
    return hash;
 }
 
+//edit one user
+exports.updateUser = async (req, res) => {
+  const { old_email, email, name, type, visions } = req.body;
 
+  try{
+    let verify = await this.verifyUser( old_email );
+    
+    console.log(verify);
 
+    if (verify.NUM == 0) {
+      return res.send({ status: STATUS_CODE.INCORRECT_USER_EMAIL, message: old_email });
+    }
 
+    let remove = await this.removeUser( old_email );
+    if (remove.affectedRows){
+      console.log('update in process....');
+    }
+
+    let result = await this.insertUser({ email, name, type, visions });
+    if (result.affectedRows) {
+      return res.send({ status: STATUS_CODE.SUCCESS });
+    }
+  } catch (error){
+    return res.send({ status: STATUS_CODE.ERROR, message: error });
+  }
+
+  return res.send({ status: STATUS_CODE.ERROR });
+};
