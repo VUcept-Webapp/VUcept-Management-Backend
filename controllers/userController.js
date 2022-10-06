@@ -171,7 +171,18 @@ exports.readUser = async (req, res) => {
       }
     }
   })
-  
+
+  //calculate the number of pages
+  const queryCount = "SELECT COUNT(*) AS count FROM users";
+  var pages = 0;
+  await connection.promise().query(queryCount)
+  .then(data => {
+    pages = Math.ceil(data[0][0].count/row_num);
+  })
+  .catch(error => {
+    console.log(error);
+  });
+
   const query = 'SELECT name, email, visions, type, status FROM users' +  where + orderby +
   ' LIMIT ' + row_num + ' OFFSET ' + row_start;
 
@@ -183,12 +194,16 @@ exports.readUser = async (req, res) => {
   });
 
   try {
-    let result = await viewusers;
-    return res.send({ status: STATUS_CODE.SUCCESS, result: result})
+    var rows = await viewusers;
+    return res.send({ status: STATUS_CODE.SUCCESS, result: {rows, pages}})
   } catch (error) {
     return res.send({ status: STATUS_CODE.ERROR, result: error });
   }
 };
+
+// async function countRows (table) {
+
+// }
 
 //delete one user
 exports.deleteUser = async (req, res) => {
