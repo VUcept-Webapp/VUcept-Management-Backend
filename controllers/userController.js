@@ -1,10 +1,10 @@
+const crypto = require('crypto'); 
 const { STATUS_CODE, SORT_ORDER, TYPE, REGISTRATION_STATUS } = require('../lib/constants');
 const connection = require('../models/connection');
 
 //reset the entire database and delete all information
 exports.resetDatabase = async (req, res) => {
-  const query = `DELETE FROM users;` + 'DELETE FROM students;' + 'DELETE FROM student_attendance;' +
-  `DELETE FROM student_events;` + 'DELETE FROM vuceptor_events;' + 'DELETE FROM vuceptor_attendance;';
+  const query = `DELETE FROM users;`;
 
   const reset = new Promise((resolve, reject) => {
     connection.query(query, (err, res) => {
@@ -13,7 +13,7 @@ exports.resetDatabase = async (req, res) => {
     })
   });
 
-  try{
+  try {
     await reset;
   } catch (error){
     return res.send({ status: STATUS_CODE.ERROR, result: error });
@@ -122,7 +122,7 @@ exports.readUser = async (req, res) => {
   const status_filter = (!req.query.status_filter) ? '' : ' status = ' + req.query.status_filter;
   const type_filter = (!req.query.type_filter) ? '' : ' type = ' + req.query.type_filter;
   const row_start = (!req.query.row_start) ? 0 : req.query.row_start;
-  const row_num = (!req.query.row_num) ? 10 : req.query.row_num;
+  const row_num = (!req.query.row_num) ? 50 : req.query.row_num;
 
   // check parameters
   const sort_list = [req.query.name_sort, req.query.email_sort, req.query.visions_sort];
@@ -169,7 +169,18 @@ exports.readUser = async (req, res) => {
       }
     }
   })
-  
+
+  //calculate the number of pages
+  const queryCount = "SELECT COUNT(*) AS count FROM users";
+  var pages = 0;
+  await connection.promise().query(queryCount)
+  .then(data => {
+    pages = Math.ceil(data[0][0].count/row_num);
+  })
+  .catch(error => {
+    console.log(error);
+  });
+
   const query = 'SELECT name, email, visions, type, status FROM users' +  where + orderby +
   ' LIMIT ' + row_num + ' OFFSET ' + row_start;
 
@@ -181,12 +192,16 @@ exports.readUser = async (req, res) => {
   });
 
   try {
-    let result = await viewusers;
-    return res.send({ status: STATUS_CODE.SUCCESS, result: result})
+    var rows = await viewusers;
+    return res.send({ status: STATUS_CODE.SUCCESS, result: {rows, pages}})
   } catch (error) {
     return res.send({ status: STATUS_CODE.ERROR, result: error });
   }
 };
+
+// async function countRows (table) {
+
+// }
 
 //delete one user
 exports.deleteUser = async (req, res) => {
@@ -207,9 +222,101 @@ exports.deleteUser = async (req, res) => {
   } catch (error) {
     return res.send({ status: STATUS_CODE.ERROR, result: error });
   }
+  console.log('success');
+  return res.send({ status: STATUS_CODE.SUCCESS});
+}
 
-  return res.send({ status: STATUS_CODE.ERROR });
-};
+exports.login = async (req, res) => {
+  const query = `SELECT * FROM users WHERE email = ?`;
+  const {email, password, code, originalCode} = req.body;
+  connection.promise().query(query, [email.toLowerCase()])
+    .then(data => {
+      if (data[0].length === 0) {
+        return res.send({status: STATUS_CODE.INVALID_EMAIL});
+      } else if (data[0][0].status === REGISTRATION_STATUS.UNREGISTERED){
+        return res.send({status: STATUS_CODE.REQUEST_SIGN_UP});
+      } else if (code === originalCode){
+        const inputPassword = hashPassword(password, data[0][0].salt);
+        if (inputPassword === data[0][0].hash){
+          return res.send({ status: STATUS_CODE.SUCCESS});
+        } else {
+          return res.send({status: STATUS_CODE.INVALID_PASSWORD});
+        }
+      } else {
+        return res.send({ status: STATUS_CODE.INVALID_CODE});
+      }
+    })
+    .catch(error => {
+      console.log(error);
+      res.send({status: STATUS_CODE.ERROR});
+    });
+}
+
+exports.sendVerificationEmail = async (req, res) =>{
+  const code = Math.floor(100000 + Math.random() * 900000);
+  const mailOptions = {
+    from: process.env.MAIL_EMAIL,
+    to: req.body.email,
+    subject: 'VUcept Management Verification Code',
+    text: 'Please enter the following verification code: ' + code
+  };
+  transport.sendMail(mailOptions, (error, info) => {
+    if (error) {
+      res.send({status: STATUS_CODE.ERROR});
+    } else {
+      res.send({status: STATUS_CODE.SUCCESS, code: code})
+    }
+  });
+}
+
+exports.signUp = async (req, res) => {
+  const {password, code, originalCode, email} = req.body;
+  //check for verification code
+  if (code !== originalCode) {
+    return res.send({status: STATUS_CODE.INVALID_CODE});
+  }
+  //check for user status 
+  const queryEmail = `SELECT * FROM users WHERE email = ?`;
+  connection.promise().query(queryEmail, [email])
+  .then(data => {
+    if (data[0].length === 0) {
+      console.log(data[0])
+      return res.send({status: STATUS_CODE.INVALID_EMAIL});
+    } else {
+      //data[0][0] contains the actual json object that gets returned by mysql
+      if (data[0][0].status !== REGISTRATION_STATUS.UNREGISTERED){
+        return res.send({status : STATUS_CODE.USER_EXISTENT});
+      }
+    }
+  })
+  .catch(error => {
+    console.log(error);
+    return res.send({ status: STATUS_CODE.ERROR});
+  });
+  // Creating a unique salt for a particular user 
+  const salt = crypto.randomBytes(16).toString('hex'); 
+  const query = `UPDATE users 
+  SET hash = ?, salt = ?, status = 'registered'
+  WHERE email = ?`;
+  const hash = hashPassword(password, salt);
+
+  connection.promise().query(query, [hash, salt, email])
+  .then(data => {
+    if (data[0].affectedRows) {
+      return res.send({status : STATUS_CODE.SUCCESS});
+    }
+  })
+  .catch(error => {
+    console.log(error);
+    return res.send({ status: STATUS_CODE.ERROR});
+  });
+}
+
+function hashPassword (password, salt) {
+   // Hashing user's salt and password with 1000 iterations, 
+   hash = crypto.pbkdf2Sync(password, salt, 1000, 64, `sha512`).toString(`hex`); 
+   return hash;
+}
 
 //edit one user
 exports.updateUser = async (req, res) => {
@@ -239,4 +346,3 @@ exports.updateUser = async (req, res) => {
 
   return res.send({ status: STATUS_CODE.ERROR });
 };
-
