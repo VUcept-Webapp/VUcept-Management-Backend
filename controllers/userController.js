@@ -2,6 +2,27 @@ const fs = require("fs");
 const { STATUS_CODE, SORT_ORDER, TYPE, REGISTRATION_STATUS } = require('../lib/constants');
 const connection = require('../models/connection');
 
+//reset the entire database and delete all information
+exports.resetDatabase = async (req, res) => {
+  const query = `DELETE FROM users;` + 'DELETE FROM students;' + 'DELETE FROM student_attendance;' +
+  `DELETE FROM student_events;` + 'DELETE FROM vuceptor_events;' + 'DELETE FROM vuceptor_attendance;';
+
+  const reset = new Promise((resolve, reject) => {
+    connection.query(query, (err, res) => {
+      if (err) reject(err);
+      else resolve(res);
+    })
+  });
+
+  try{
+    await reset;
+  } catch (error){
+    return res.send({ status: STATUS_CODE.ERROR, message: error });
+  }
+
+  return res.send({ status: STATUS_CODE.ERROR });
+};
+
 // Shared functions
 exports.insertUser = ({ email, name, type, visions }) => {
   const query = `INSERT INTO users (email, name, type, status, visions) VALUES (?,?,?,'unregistered',?)`;
@@ -39,6 +60,7 @@ exports.removeUser = ( email ) => {
 //load with csv file
 exports.loadfruserLoadfromcsvomcsv = async (req, res) => {
   const { file } = req.body;
+  var duplicates = [];
 
   // Fetching the data from each row 
   // and inserting to the table "sample"
@@ -51,15 +73,16 @@ exports.loadfruserLoadfromcsvomcsv = async (req, res) => {
     try {
       let verify = await this.verifyUser( email );
       if (verify.NUM > 0) {
-        return res.send({ status: STATUS_CODE.EMAIL_USED, message: email });
+        duplicates.push(email);
+      } else{
+        await this.insertUser({ email, name, type, visions });
       }
-      await this.insertUser({ email, name, type, visions });
     } catch (error) {
       return res.send({ status: STATUS_CODE.ERROR, message: error });
     }
   }
 
-  return res.send({ status: STATUS_CODE.SUCCESS });
+  return res.send({ status: STATUS_CODE.SUCCESS, message: duplicates });
 };
 
 //add one user
@@ -95,7 +118,7 @@ exports.readUser = async (req, res) => {
   const status_filter = (!req.query.status_filter) ? '' : ' status = ' + req.query.status_filter;
   const type_filter = (!req.query.type_filter) ? '' : ' type = ' + req.query.type_filter;
   const row_start = (!req.query.row_start) ? 0 : req.query.row_start;
-  const row_num = (!req.query.row_end) ? 10 : req.query.row_end;
+  const row_num = (!req.query.row_num) ? 10 : req.query.row_num;
 
   // check parameters
   const sort_list = [req.query.name_sort, req.query.email_sort, req.query.visions_sort];
@@ -212,3 +235,4 @@ exports.updateUser = async (req, res) => {
 
   return res.send({ status: STATUS_CODE.ERROR });
 };
+
