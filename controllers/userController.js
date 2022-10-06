@@ -17,7 +17,7 @@ exports.resetDatabase = async (req, res) => {
   try{
     await reset;
   } catch (error){
-    return res.send({ status: STATUS_CODE.ERROR, message: error });
+    return res.send({ status: STATUS_CODE.ERROR, result: error });
   }
 
   return res.send({ status: STATUS_CODE.ERROR });
@@ -78,14 +78,14 @@ exports.loadfruserLoadfromcsvomcsv = async (req, res) => {
         await this.insertUser({ email, name, type, visions });
       }
     } catch (error) {
-      return res.send({ status: STATUS_CODE.ERROR, message: error });
+      return res.send({ status: STATUS_CODE.ERROR, result: error });
     }
   }
 
   if(duplicates.length == 0){
     return res.send({ status: STATUS_CODE.SUCCESS });
   } else{
-    return res.send({ status: STATUS_CODE.EMAIL_USED, message: duplicates });
+    return res.send({ status: STATUS_CODE.EMAIL_USED, result: duplicates });
   }
   
 };
@@ -97,7 +97,7 @@ exports.createUser = async (req, res) => {
   try {
     let verify = await this.verifyUser( email );
     if (verify.NUM > 0) {
-      return res.send({ status: STATUS_CODE.EMAIL_USED, message: email });
+      return res.send({ status: STATUS_CODE.EMAIL_USED, result: email });
     }
 
     let result = await this.insertUser({ email, name, type, visions });
@@ -106,7 +106,7 @@ exports.createUser = async (req, res) => {
       return res.send({ status: STATUS_CODE.SUCCESS });
     }
   } catch (error) {
-    return res.send({ status: STATUS_CODE.ERROR, message: error });
+    return res.send({ status: STATUS_CODE.ERROR, result: error });
   }
 
   return res.send({ status: STATUS_CODE.ERROR });
@@ -183,9 +183,9 @@ exports.readUser = async (req, res) => {
 
   try {
     let result = await viewusers;
-    return res.send({ status: STATUS_CODE.SUCCESS, message: result})
+    return res.send({ status: STATUS_CODE.SUCCESS, result: result})
   } catch (error) {
-    return res.send({ status: STATUS_CODE.ERROR, message: error });
+    return res.send({ status: STATUS_CODE.ERROR, result: error });
   }
 };
 
@@ -197,7 +197,7 @@ exports.deleteUser = async (req, res) => {
     let verify = await this.verifyUser( email );
 
     if (verify.NUM == 0) {
-      return res.send({ status: STATUS_CODE.INCORRECT_USER_EMAIL, message: email });
+      return res.send({ status: STATUS_CODE.INCORRECT_USER_EMAIL, result: email });
     }
 
     let result = await this.removeUser( email );
@@ -206,7 +206,7 @@ exports.deleteUser = async (req, res) => {
       return res.send({ status: STATUS_CODE.SUCCESS });
     }
   } catch (error) {
-    return res.send({ status: STATUS_CODE.ERROR, message: error });
+    return res.send({ status: STATUS_CODE.ERROR, result: error });
   }
 
   return res.send({ status: STATUS_CODE.ERROR });
@@ -222,7 +222,7 @@ exports.updateUser = async (req, res) => {
     console.log(verify);
 
     if (verify.NUM == 0) {
-      return res.send({ status: STATUS_CODE.INCORRECT_USER_EMAIL, message: old_email });
+      return res.send({ status: STATUS_CODE.INCORRECT_USER_EMAIL, result: old_email });
     }
 
     let remove = await this.removeUser( old_email );
@@ -235,7 +235,7 @@ exports.updateUser = async (req, res) => {
       return res.send({ status: STATUS_CODE.SUCCESS });
     }
   } catch (error){
-    return res.send({ status: STATUS_CODE.ERROR, message: error });
+    return res.send({ status: STATUS_CODE.ERROR, result: error });
   }
 
   return res.send({ status: STATUS_CODE.ERROR });
