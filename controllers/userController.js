@@ -82,7 +82,12 @@ exports.loadfruserLoadfromcsvomcsv = async (req, res) => {
     }
   }
 
-  return res.send({ status: STATUS_CODE.SUCCESS, message: duplicates });
+  if(duplicates.length == 0){
+    return res.send({ status: STATUS_CODE.SUCCESS });
+  } else{
+    return res.send({ status: STATUS_CODE.EMAIL_USED, message: duplicates });
+  }
+  
 };
 
 //add one user
