@@ -1,4 +1,3 @@
-const fs = require("fs");
 const { STATUS_CODE, SORT_ORDER, TYPE, REGISTRATION_STATUS } = require('../lib/constants');
 const connection = require('../models/connection');
 
@@ -20,7 +19,7 @@ exports.resetDatabase = async (req, res) => {
     return res.send({ status: STATUS_CODE.ERROR, result: error });
   }
 
-  return res.send({ status: STATUS_CODE.ERROR });
+  return res.send({ status: STATUS_CODE.SUCCESS });
 };
 
 // Shared functions
