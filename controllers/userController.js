@@ -56,6 +56,18 @@ exports.removeUser = ( email ) => {
   });
 }
 
+exports.editUser = ({ old_email, email, name, type, visions }) => {
+  const query = `UPDATE users SET email = ?, name = ?, type = ?, visions = ? WHERE email = ?;`;
+  console.log({ email, name, type, visions, old_email,  });
+
+  return new Promise((resolve, reject) => {
+    connection.query(query, [email, name, type, visions, old_email], (err, res) => {
+      if (err) reject(err);
+      else resolve(res);
+    })
+  })
+}
+
 //load with csv file
 exports.loadfruserLoadfromcsvomcsv = async (req, res) => {
   const { file } = req.body;
@@ -323,26 +335,10 @@ exports.updateUser = async (req, res) => {
   const { old_email, email, name, type, visions } = req.body;
 
   try{
-    let verify = await this.verifyUser( old_email );
-    
-    console.log(verify);
-
-    if (verify.NUM == 0) {
-      return res.send({ status: STATUS_CODE.INCORRECT_USER_EMAIL, result: old_email });
-    }
-
-    let remove = await this.removeUser( old_email );
-    if (remove.affectedRows){
-      console.log('update in process....');
-    }
-
-    let result = await this.insertUser({ email, name, type, visions });
-    if (result.affectedRows) {
-      return res.send({ status: STATUS_CODE.SUCCESS });
-    }
+    let result = await this.editUser({ old_email, email, name, type, visions });
+    return res.send({ status: STATUS_CODE.SUCCESS });
   } catch (error){
     return res.send({ status: STATUS_CODE.ERROR, result: error });
   }
 
-  return res.send({ status: STATUS_CODE.ERROR });
 };
