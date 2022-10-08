@@ -1,5 +1,5 @@
 const crypto = require('crypto'); 
-const { STATUS_CODE, SORT_ORDER, TYPE, REGISTRATION_STATUS } = require('../lib/constants');
+const { STATUS_CODE, SORT_ORDER, TYPE, REGISTRATION_STATUS, transport } = require('../lib/constants');
 const connection = require('../models/connection');
 
 //reset the entire database and delete all information
@@ -228,7 +228,7 @@ exports.deleteUser = async (req, res) => {
 
 exports.login = async (req, res) => {
   const query = `SELECT * FROM users WHERE email = ?`;
-  const {email, password, code, originalCode} = req.body;
+  const {email, password, code, originalCode} = req.query;
   connection.promise().query(query, [email.toLowerCase()])
     .then(data => {
       if (data[0].length === 0) {
@@ -262,6 +262,7 @@ exports.sendVerificationEmail = async (req, res) =>{
   };
   transport.sendMail(mailOptions, (error, info) => {
     if (error) {
+      console.log(error);
       res.send({status: STATUS_CODE.ERROR});
     } else {
       res.send({status: STATUS_CODE.SUCCESS, code: code})
