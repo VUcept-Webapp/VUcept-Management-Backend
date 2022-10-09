@@ -3,7 +3,6 @@ const routerUser = express.Router();
 const userController = require('../controllers/userController');
 
 // Routes
-
 routerUser.post('/resetDatabase', userController.resetDatabase);
 routerUser.post('/userLoadfromcsv', userController.loadfruserLoadfromcsvomcsv);
 routerUser.post('/createUser', userController.createUser);

@@ -1,8 +1,5 @@
 const { STATUS_CODE, SORT_ORDER, TYPE, REGISTRATION_STATUS } = require('../lib/constants');
 const connection = require('../models/connection');
-
-<<<<<<< Updated upstream
-=======
 //reset the entire database and delete all information
 exports.resetDatabase = async (req, res) => {
   const query = `DELETE FROM users;`;
@@ -13,8 +10,8 @@ exports.resetDatabase = async (req, res) => {
       else resolve(res);
     })
   });
-
-  try{
+  
+  try {
     await reset;
   } catch (error){
     return res.send({ status: STATUS_CODE.ERROR, result: error });
@@ -22,7 +19,6 @@ exports.resetDatabase = async (req, res) => {
   return res.send({ status: STATUS_CODE.SUCCESS });
 };
 
->>>>>>> Stashed changes
 // Shared functions
 exports.insertUser = ({ email, name, type, visions }) => {
   const query = `INSERT INTO users (email, name, type, status, visions) VALUES (?,?,?,'unregistered',?)`;
@@ -57,9 +53,22 @@ exports.removeUser = ( email ) => {
   });
 }
 
+exports.editUser = ({ old_email, email, name, type, visions }) => {
+  const query = `UPDATE users SET email = ?, name = ?, type = ?, visions = ? WHERE email = ?;`;
+  console.log({ email, name, type, visions, old_email,  });
+
+  return new Promise((resolve, reject) => {
+    connection.query(query, [email, name, type, visions, old_email], (err, res) => {
+      if (err) reject(err);
+      else resolve(res);
+    })
+  })
+}
+
 //load with csv file
 exports.loadfruserLoadfromcsvomcsv = async (req, res) => {
   const { file } = req.body;
+  var duplicates = [];
 
   // Fetching the data from each row 
   // and inserting to the table "sample"
@@ -72,15 +81,21 @@ exports.loadfruserLoadfromcsvomcsv = async (req, res) => {
     try {
       let verify = await this.verifyUser( email );
       if (verify.NUM > 0) {
-        return res.send({ status: STATUS_CODE.EMAIL_USED, message: email });
+        duplicates.push(email);
+      } else{
+        await this.insertUser({ email, name, type, visions });
       }
-      await this.insertUser({ email, name, type, visions });
     } catch (error) {
-      return res.send({ status: STATUS_CODE.ERROR, message: error });
+      return res.send({ status: STATUS_CODE.ERROR, result: error });
     }
   }
 
-  return res.send({ status: STATUS_CODE.SUCCESS });
+  if(duplicates.length == 0){
+    return res.send({ status: STATUS_CODE.SUCCESS });
+  } else{
+    return res.send({ status: STATUS_CODE.EMAIL_USED, result: duplicates });
+  }
+  
 };
 
 //add one user
@@ -90,7 +105,7 @@ exports.createUser = async (req, res) => {
   try {
     let verify = await this.verifyUser( email );
     if (verify.NUM > 0) {
-      return res.send({ status: STATUS_CODE.EMAIL_USED, message: email });
+      return res.send({ status: STATUS_CODE.EMAIL_USED, result: email });
     }
 
     let result = await this.insertUser({ email, name, type, visions });
@@ -99,7 +114,7 @@ exports.createUser = async (req, res) => {
       return res.send({ status: STATUS_CODE.SUCCESS });
     }
   } catch (error) {
-    return res.send({ status: STATUS_CODE.ERROR, message: error });
+    return res.send({ status: STATUS_CODE.ERROR, result: error });
   }
 
   return res.send({ status: STATUS_CODE.ERROR });
@@ -116,7 +131,7 @@ exports.readUser = async (req, res) => {
   const status_filter = (!req.query.status_filter) ? '' : ' status = ' + req.query.status_filter;
   const type_filter = (!req.query.type_filter) ? '' : ' type = ' + req.query.type_filter;
   const row_start = (!req.query.row_start) ? 0 : req.query.row_start;
-  const row_num = (!req.query.row_end) ? 10 : req.query.row_end;
+  const row_num = (!req.query.row_num) ? 50 : req.query.row_num;
 
   // check parameters
   const sort_list = [req.query.name_sort, req.query.email_sort, req.query.visions_sort];
@@ -163,7 +178,18 @@ exports.readUser = async (req, res) => {
       }
     }
   })
-  
+
+  //calculate the number of pages
+  const queryCount = "SELECT COUNT(*) AS count FROM users";
+  var pages = 0;
+  await connection.promise().query(queryCount)
+  .then(data => {
+    pages = Math.ceil(data[0][0].count/row_num);
+  })
+  .catch(error => {
+    console.log(error);
+  });
+
   const query = 'SELECT name, email, visions, type, status FROM users' +  where + orderby +
   ' LIMIT ' + row_num + ' OFFSET ' + row_start;
 
@@ -175,10 +201,10 @@ exports.readUser = async (req, res) => {
   });
 
   try {
-    let result = await viewusers;
-    return res.send({ status: STATUS_CODE.SUCCESS, message: result})
+    var rows = await viewusers;
+    return res.send({ status: STATUS_CODE.SUCCESS, result: {rows, pages}})
   } catch (error) {
-    return res.send({ status: STATUS_CODE.ERROR, message: error });
+    return res.send({ status: STATUS_CODE.ERROR, result: error });
   }
 };
 
@@ -190,7 +216,7 @@ exports.deleteUser = async (req, res) => {
     let verify = await this.verifyUser( email );
 
     if (verify.NUM == 0) {
-      return res.send({ status: STATUS_CODE.INCORRECT_USER_EMAIL, message: email });
+      return res.send({ status: STATUS_CODE.INCORRECT_USER_EMAIL, result: email });
     }
 
     let result = await this.removeUser( email );
@@ -199,7 +225,7 @@ exports.deleteUser = async (req, res) => {
       return res.send({ status: STATUS_CODE.SUCCESS });
     }
   } catch (error) {
-    return res.send({ status: STATUS_CODE.ERROR, message: error });
+    return res.send({ status: STATUS_CODE.ERROR, result: error });
   }
   console.log('success');
   return res.send({ status: STATUS_CODE.SUCCESS});
@@ -210,26 +236,10 @@ exports.updateUser = async (req, res) => {
   const { old_email, email, name, type, visions } = req.body;
 
   try{
-    let verify = await this.verifyUser( old_email );
-    
-    console.log(verify);
-
-    if (verify.NUM == 0) {
-      return res.send({ status: STATUS_CODE.INCORRECT_USER_EMAIL, message: old_email });
-    }
-
-    let remove = await this.removeUser( old_email );
-    if (remove.affectedRows){
-      console.log('update in process....');
-    }
-
-    let result = await this.insertUser({ email, name, type, visions });
-    if (result.affectedRows) {
-      return res.send({ status: STATUS_CODE.SUCCESS });
-    }
+    let result = await this.editUser({ old_email, email, name, type, visions });
+    return res.send({ status: STATUS_CODE.SUCCESS });
   } catch (error){
-    return res.send({ status: STATUS_CODE.ERROR, message: error });
+    return res.send({ status: STATUS_CODE.ERROR, result: error });
   }
 
-  return res.send({ status: STATUS_CODE.ERROR });
 };
