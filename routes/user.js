@@ -6,6 +6,7 @@ const userController = require('../controllers/userController');
 routerUser.post('/sendVerificationEmail', userController.sendVerificationEmail);
 routerUser.get('/login', userController.login);
 routerUser.post('/signUp', userController.signUp);
+
 routerUser.post('/resetDatabase', userController.resetDatabase);
 routerUser.post('/userLoadfromcsv', userController.loadfruserLoadfromcsvomcsv);
 routerUser.post('/createUser', userController.createUser);

@@ -15,8 +15,10 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
 // routes for the APIs
-const routes = require('./routes/user');
-app.use('/', routes);
+const userRoute = require('./routes/user');
+app.use('/', userRoute);
+const authRoute = require('./routes/auth');
+app.use('/', authRoute);
 
 app.listen(port, () => console.log(`Listening on port ${port}`));
 
