@@ -125,7 +125,7 @@ exports.createUser = async (req, res) => {
 
 //get all first year students, return a json object
 exports.readUser = async (req, res) => {
-  const name_sort = (!req.query.name_sort) ? ' name ASC' : ' name ' + req.query.name_sort;
+  const name_sort = (!req.query.name_sort) ? '' : ' name ' + req.query.name_sort;
   const name_search = (!req.query.name_search) ? '' : ' name = ' + req.query.name_search;
   const email_sort = (!req.query.email_sort) ? '' : ' email ' + req.query.email_sort;
   const email_search = (!req.query.email_search) ? '' : ' email = ' + req.query.email_search;
@@ -135,6 +135,8 @@ exports.readUser = async (req, res) => {
   const type_filter = (!req.query.type_filter) ? '' : ' type = ' + req.query.type_filter;
   const row_start = (!req.query.row_start) ? 0 : req.query.row_start;
   const row_num = (!req.query.row_num) ? 50 : req.query.row_num;
+  // add variable "condition_order"
+  const condition_order = (!req.query.condition_order) ? null : JSON.parse(req.query.condition_order);
 
   // check parameters
   const sort_list = [req.query.name_sort, req.query.email_sort, req.query.visions_sort];
@@ -170,8 +172,30 @@ exports.readUser = async (req, res) => {
     }
   })
 
+  // ORDER BY A, B will first order database by A, if A is the same then order by B
+  // if condition_order is not passed in, it will order with priorty of name -> email -> visions
+  // if condition_order is given, it will only contain sorting conditions within condition_order 
   var orderby = '';
-  const orderby_list = [name_sort, email_sort, visions_sort];
+  var orderby_list = []
+  if (condition_order == null){
+    orderby_list = [name_sort, email_sort, visions_sort];
+  } else {
+    for(let i = 0; i < condition_order.length; i++){
+      let cond = condition_order[i];
+  
+      switch (cond) {
+        case "name_sort":
+          orderby_list.push(name_sort);
+          break;
+        case "email_sort":
+          orderby_list.push(email_sort);
+          break;
+        case "visions_sort":
+          orderby_list.push(visions_sort);
+      }
+    }
+  }
+
   orderby_list.forEach(order => {
     if(order !== ''){
       if (orderby !== ''){
