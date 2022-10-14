@@ -2,9 +2,57 @@ const crypto = require('crypto');
 const { STATUS_CODE, SORT_ORDER, TYPE, REGISTRATION_STATUS, transport } = require('../lib/constants');
 const connection = require('../models/connection');
 
-//reset the entire database and delete all information
-exports.resetDatabase = async (req, res) => {
-  const query = `DELETE FROM users;`;
+
+// Shared function: insertUser
+exports.insertUser = ({ email, name, type, visions }) => {
+  const query = 'INSERT INTO users (email, name, type, status, visions) VALUES (?,?,?,\'unregistered\',?)';
+
+  return new Promise((resolve, reject) => {
+    connection.query(query, [email, name, type, visions], (err, res) => {
+      if (err) reject(err);
+      else resolve(res);
+    })
+  })
+}
+// Shared function: verifyUser
+exports.verifyUser = ( email ) => {
+  const queryCheck = 'SELECT COUNT(email) AS NUM FROM users WHERE email = ?';
+
+  return new Promise ((resolve, reject) => {
+    connection.query(queryCheck, email, (err, res) => {
+      if (err) reject(err);
+      else resolve(res[0]);
+    })
+  });
+}
+// Shared function: removeUser
+exports.removeUser = ( email ) => {
+  const query = `DELETE FROM users WHERE email = ?`;
+
+  return new Promise((resolve, reject) => {
+    connection.query(query, email, (err, res) => {
+      if (err) reject(err);
+      else resolve(res);
+    })
+  });
+}
+// Shared function: editUser
+exports.editUser = ({ old_email, email, name, type, visions }) => {
+  const query = `UPDATE users SET email = ?, name = ?, type = ?, visions = ? WHERE email = ?;`;
+  // console.log({ email, name, type, visions, old_email,  });
+
+  return new Promise((resolve, reject) => {
+    connection.query(query, [email, name, type, visions, old_email], (err, res) => {
+      if (err) reject(err);
+      else resolve(res);
+    })
+  })
+}
+
+
+//reset the user table
+exports.resetUsers = async (req, res) => {
+  const query = 'DELETE FROM users;';
 
   const reset = new Promise((resolve, reject) => {
     connection.query(query, (err, res) => {
@@ -22,50 +70,24 @@ exports.resetDatabase = async (req, res) => {
   return res.send({ status: STATUS_CODE.SUCCESS });
 };
 
-// Shared functions
-exports.insertUser = ({ email, name, type, visions }) => {
-  const query = `INSERT INTO users (email, name, type, status, visions) VALUES (?,?,?,'unregistered',?)`;
+// return the max Visions group number
+exports.visionsNums = async (req, res) => {
+  const query = 'SELECT DISTINCT visions FROM mydb.users ORDER BY visions DESC';
 
-  return new Promise((resolve, reject) => {
-    connection.query(query, [email, name, type, visions], (err, res) => {
-      if (err) reject(err);
-      else resolve(res);
-    })
-  })
-}
-
-exports.verifyUser = ( email ) => {
-  const queryCheck = 'SELECT COUNT(email) AS NUM FROM users WHERE email = ?';
-
-  return new Promise ((resolve, reject) => {
-    connection.query(queryCheck, email, (err, res) => {
-      if (err) reject(err);
-      else resolve(res[0]);
-    })
-  });
-}
-
-exports.removeUser = ( email ) => {
-  const query = `DELETE FROM users WHERE email = ?`;
-
-  return new Promise((resolve, reject) => {
-    connection.query(query, email, (err, res) => {
+  const returnMaxVisions = new Promise((resolve, reject) => {
+    connection.query(query, (err, res) => {
       if (err) reject(err);
       else resolve(res);
     })
   });
-}
 
-exports.editUser = ({ old_email, email, name, type, visions }) => {
-  const query = `UPDATE users SET email = ?, name = ?, type = ?, visions = ? WHERE email = ?;`;
-  console.log({ email, name, type, visions, old_email,  });
+  try {
+    let maxVisions = await returnMaxVisions;
+    return res.send({ status: STATUS_CODE.SUCCESS, result: { max: maxVisions[0].visions, list: maxVisions }});
+  } catch (error){
+    return res.send({ status: STATUS_CODE.ERROR, result: error });
+  }
 
-  return new Promise((resolve, reject) => {
-    connection.query(query, [email, name, type, visions, old_email], (err, res) => {
-      if (err) reject(err);
-      else resolve(res);
-    })
-  })
 }
 
 //load with csv file
@@ -126,21 +148,23 @@ exports.createUser = async (req, res) => {
 //get all first year students, return a json object
 exports.readUser = async (req, res) => {
   const name_sort = (!req.query.name_sort) ? '' : ' name ' + req.query.name_sort;
-  const name_search = (!req.query.name_search) ? '' : ` name = '${req.query.name_search}'`;
   const email_sort = (!req.query.email_sort) ? '' : ' email ' + req.query.email_sort;
-  const email_search = (!req.query.email_search) ? '' : ` email = '${req.query.email_search}'`;
   const visions_sort = (!req.query.visions_sort) ? '' : ' visions ' + req.query.visions_sort;
-  const visions_filter = (!req.query.visions_filter) ? '' : ' visions = ' + req.query.visions_filter;
-  const status_filter = (!req.query.status_filter) ? '' : ' status = ' + req.query.status_filter;
-  const type_filter = (!req.query.type_filter) ? '' : ' type = ' + req.query.type_filter;
+  // add variable "condition_order"
+  // what format of param are we passing in for condition? If string array we need to JSON.parse
+  const condition_order = (!req.query.condition_order) ? null : JSON.parse(req.query.condition_order);
+  
+  // pass in array for all search/filtering options
+  const name_search = (!req.query.name_search) ? '' : JSON.parse(req.query.name_search);
+  const email_search = (!req.query.email_search) ? '' : JSON.parse(req.query.email_search);
+  const visions_filter = (!req.query.visions_filter) ? '' : JSON.parse(req.query.visions_filter);
+  const status_filter = (!req.query.status_filter) ? '' : JSON.parse(req.query.status_filter);
+  const type_filter = (!req.query.type_filter) ? '' : JSON.parse(req.query.type_filter);
+  
   const row_start = (!req.query.row_start) ? 0 : req.query.row_start;
   const row_num = (!req.query.row_num) ? 50 : req.query.row_num;
-  // add variable "condition_order"
-  const condition_order = (!req.query.condition_order) ? null : req.query.condition_order;
 
-  console.log(req.query.condition_order);
-
-  // check parameters
+  // check parameters: sort
   const sort_list = [req.query.name_sort, req.query.email_sort, req.query.visions_sort];
   for (var i = 0; i < sort_list.length; ++i){
     if (sort_list[i] && (sort_list[i] !== SORT_ORDER.ASC) && (sort_list[i] !== SORT_ORDER.DESC)){
@@ -148,13 +172,15 @@ exports.readUser = async (req, res) => {
       return res.send({ status: STATUS_CODE.UNKNOWN_SORT });
     }
   }
-
+  // check parameters: status
   if ((req.query.status_filter) && (req.query.status_filter !== REGISTRATION_STATUS.REGISTERED) && 
   (req.query.status_filter !== REGISTRATION_STATUS.UNREGISTERED)){
     console.log("STATUS ERROR\n");
     return res.send({ status: STATUS_CODE.INCORRECT_STATUS });
   }
 
+  // need this?????
+  // check parameters: type filter
   if ((req.query.type_filter) && (req.query.type_filter !== TYPE.VUCEPTOR) && (req.query.type_filter !== TYPE.ADVISER)
   && (req.query.type_filter !== TYPE.BOARD)){
     console.log("TYPE ERROR\n");
@@ -163,16 +189,59 @@ exports.readUser = async (req, res) => {
 
   // create where string
   var where = '';
-  const where_list = [name_search, email_search, visions_filter, status_filter, type_filter];
-  where_list.forEach(cond => {
+  const where_list = [name_search, email_search, status_filter, type_filter, visions_filter];
+  const prefix_list = ['name = ', 'email = ', 'status = ', 'type = ', 'visions = '];
+  where_list.forEach
+  for (let m = 0; m < where_list.length; m++){
+    cond = where_list[m];
+    prefix = prefix_list[m];
+
     if(cond !== ''){
+      let tmp = '';
+
       if (where !== ''){
-        where = where + ' AND' + cond;
+        // initialize
+        if (m == (where_list.length - 1)){ // visions_filter
+          tmp = prefix + cond[0];
+        } else{
+          tmp = prefix + '\'' + cond[0] + '\'';
+        }
+
+        if (m == (where_list.length - 1)){ // visions_filter
+          for(let k = 1; k < cond.length; k++){
+            tmp = tmp + ' OR ' + prefix + cond[k];
+          }
+        } else {
+          for(let k = 1; k < cond.length; k++){
+            tmp = tmp + ' OR ' + prefix + '\'' + cond[k] + '\'';
+          }
+        }
+
+        where = where + ' AND (' + tmp + ')';
       } else {
-        where = ' WHERE' + cond;
+        let tmp = '';
+
+        // initialize
+        if (m == (where_list.length - 1)){ // visions_filter
+          tmp = prefix + cond[0];
+        } else{
+          tmp = prefix + '\'' + cond[0] + '\'';
+        }
+
+        if (m == (where_list.length - 1)){ // visions_filter
+          for(let k = 1; k < cond.length; k++){
+            tmp = tmp + ' OR ' + prefix + cond[k];
+          }
+        } else{
+          for(let k = 1; k < cond.length; k++){
+            tmp = tmp + ' OR ' + prefix + '\'' + cond[k] + '\'';
+          }
+        }
+
+        where = ' WHERE (' + tmp + ')';
       }
     }
-  })
+  }
 
   // ORDER BY A, B will first order database by A, if A is the same then order by B
   // if condition_order is not passed in, it will order with priorty of name -> email -> visions
@@ -198,6 +267,7 @@ exports.readUser = async (req, res) => {
     }
   }
 
+  // create ORDER BY string
   orderby_list.forEach(order => {
     if(order !== ''){
       if (orderby !== ''){
@@ -231,15 +301,11 @@ exports.readUser = async (req, res) => {
 
   try {
     var rows = await viewusers;
-    return res.send({ status: STATUS_CODE.SUCCESS, result: {rows, pages}})
+    return res.send({ status: STATUS_CODE.SUCCESS, result: {rows, pages}});
   } catch (error) {
     return res.send({ status: STATUS_CODE.ERROR, result: error });
   }
 };
-
-// async function countRows (table) {
-
-// }
 
 //delete one user
 exports.deleteUser = async (req, res) => {
