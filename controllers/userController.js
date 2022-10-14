@@ -172,26 +172,11 @@ exports.readUser = async (req, res) => {
       return res.send({ status: STATUS_CODE.UNKNOWN_SORT });
     }
   }
-  // check parameters: status
-  if ((req.query.status_filter) && (req.query.status_filter !== REGISTRATION_STATUS.REGISTERED) && 
-  (req.query.status_filter !== REGISTRATION_STATUS.UNREGISTERED)){
-    console.log("STATUS ERROR\n");
-    return res.send({ status: STATUS_CODE.INCORRECT_STATUS });
-  }
-
-  // need this?????
-  // check parameters: type filter
-  if ((req.query.type_filter) && (req.query.type_filter !== TYPE.VUCEPTOR) && (req.query.type_filter !== TYPE.ADVISER)
-  && (req.query.type_filter !== TYPE.BOARD)){
-    console.log("TYPE ERROR\n");
-    return res.send({ status: STATUS_CODE.INCORRECT_TYPE });
-  }
 
   // create where string
   var where = '';
   const where_list = [name_search, email_search, status_filter, type_filter, visions_filter];
   const prefix_list = ['name = ', 'email = ', 'status = ', 'type = ', 'visions = '];
-  where_list.forEach
   for (let m = 0; m < where_list.length; m++){
     cond = where_list[m];
     prefix = prefix_list[m];
@@ -326,7 +311,6 @@ exports.deleteUser = async (req, res) => {
   } catch (error) {
     return res.send({ status: STATUS_CODE.ERROR, result: error });
   }
-  console.log('success');
   return res.send({ status: STATUS_CODE.SUCCESS});
 }
 
