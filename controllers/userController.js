@@ -126,9 +126,9 @@ exports.createUser = async (req, res) => {
 //get all first year students, return a json object
 exports.readUser = async (req, res) => {
   const name_sort = (!req.query.name_sort) ? '' : ' name ' + req.query.name_sort;
-  const name_search = (!req.query.name_search) ? '' : ' name = ' + req.query.name_search;
+  const name_search = (!req.query.name_search) ? '' : ` name = '${req.query.name_search}'`;
   const email_sort = (!req.query.email_sort) ? '' : ' email ' + req.query.email_sort;
-  const email_search = (!req.query.email_search) ? '' : ' email = ' + req.query.email_search;
+  const email_search = (!req.query.email_search) ? '' : ` email = '${req.query.email_search}'`;
   const visions_sort = (!req.query.visions_sort) ? '' : ' visions ' + req.query.visions_sort;
   const visions_filter = (!req.query.visions_filter) ? '' : ' visions = ' + req.query.visions_filter;
   const status_filter = (!req.query.status_filter) ? '' : ' status = ' + req.query.status_filter;
@@ -136,7 +136,9 @@ exports.readUser = async (req, res) => {
   const row_start = (!req.query.row_start) ? 0 : req.query.row_start;
   const row_num = (!req.query.row_num) ? 50 : req.query.row_num;
   // add variable "condition_order"
-  const condition_order = (!req.query.condition_order) ? null : JSON.parse(req.query.condition_order);
+  const condition_order = (!req.query.condition_order) ? null : req.query.condition_order;
+
+  console.log(req.query.condition_order);
 
   // check parameters
   const sort_list = [req.query.name_sort, req.query.email_sort, req.query.visions_sort];
