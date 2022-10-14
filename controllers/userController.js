@@ -150,8 +150,6 @@ exports.readUser = async (req, res) => {
   const name_sort = (!req.query.name_sort) ? '' : ' name ' + req.query.name_sort;
   const email_sort = (!req.query.email_sort) ? '' : ' email ' + req.query.email_sort;
   const visions_sort = (!req.query.visions_sort) ? '' : ' visions ' + req.query.visions_sort;
-  // add variable "condition_order"
-  // what format of param are we passing in for condition? If string array we need to JSON.parse
   const condition_order = (!req.query.condition_order) ? null : JSON.parse(req.query.condition_order);
   
   // pass in array for all search/filtering options
