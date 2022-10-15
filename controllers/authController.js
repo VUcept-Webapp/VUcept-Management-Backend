@@ -2,30 +2,28 @@ const crypto = require('crypto');
 const connection = require('../models/connection');
 const { STATUS_CODE, REGISTRATION_STATUS } = require('../lib/constants');
 
-exports.login = async (req, res) => {
+  exports.login = async (req, res) => {
     const query = `SELECT * FROM users WHERE email = ?`;
-    const {email, password, code, originalCode} = req.body;
-    connection.promise().query(query, [email.toLowerCase()])
-      .then(data => {
-        if (data[0].length === 0) {
-          return res.send({status: STATUS_CODE.INVALID_EMAIL});
-        } else if (data[0][0].status === REGISTRATION_STATUS.UNREGISTERED){
-          return res.send({status: STATUS_CODE.REQUEST_SIGN_UP});
-        } else if (code === originalCode){
-          const inputPassword = hashPassword(password, data[0][0].salt);
-          if (inputPassword === data[0][0].hash){
-            return res.send({ status: STATUS_CODE.SUCCESS});
-          } else {
-            return res.send({status: STATUS_CODE.INVALID_PASSWORD});
-          }
-        } else {
-          return res.send({ status: STATUS_CODE.INVALID_CODE});
-        }
-      })
-      .catch(error => {
-        console.log(error);
-        return res.send({status: STATUS_CODE.ERROR});
-      });
+    const {email, password} = req.body;
+    //check for user status 
+    try {
+      const checkResult = await checkUser(email.toLowerCase());
+      if (checkResult.length === 0) {
+        return res.send({status: STATUS_CODE.INCORRECT_USER_EMAIL});
+      }
+      if (checkResult[0].status === REGISTRATION_STATUS.UNREGISTERED){
+        return res.send({status : STATUS_CODE.REQUEST_SIGN_UP});
+      }
+      const inputHash = hashPassword(password, checkResult[0].salt);
+      if (inputHash === checkResult[0].hash){
+        return res.send({status: STATUS_CODE.SUCCESS});
+      } else {
+        return res.send({status: STATUS_CODE.INVALID_PASSWORD});
+      }
+    } catch(e){
+      console.log(e);
+      return res.send({status: STATUS_CODE.ERROR});
+    }
   }
   
   exports.sendVerificationEmail = async (req, res) =>{
@@ -46,45 +44,84 @@ exports.login = async (req, res) => {
   }
   
   exports.signUp = async (req, res) => {
-    const {password, code, originalCode, email} = req.body;
-    //check for verification code
-    if (code !== originalCode) {
-      return res.send({status: STATUS_CODE.INVALID_CODE});
-    }
+    const {password, email} = req.body;
     //check for user status 
-    const queryEmail = `SELECT * FROM users WHERE email = ?`;
-    await connection.promise().query(queryEmail, [email])
-    .then(data => {
-      if (data[0].length === 0) {
-        return res.send({status: STATUS_CODE.INVALID_EMAIL});
+    try {
+      const checkResult = await checkUser(email.toLowerCase());
+      if (checkResult.length === 0) {
+        return res.send({status: STATUS_CODE.INCORRECT_USER_EMAIL});
       }
-      //data[0][0] contains the actual json object that gets returned by mysql
-      if (data[0][0].status !== REGISTRATION_STATUS.UNREGISTERED){
-        return res.send({status : STATUS_CODE.USER_EXISTENT});
+      if (checkResult[0].status !== REGISTRATION_STATUS.UNREGISTERED){
+        return res.send({status : STATUS_CODE.USER_EXIST});
       }
-    })
-    .catch(error => {
-      console.log(error);
-      return res.send({ status: STATUS_CODE.ERROR});
-    });
+    } catch(e){
+      console.log(e);
+      return res.send({status: STATUS_CODE.ERROR});
+    }
+
     // Creating a unique salt for a particular user 
+    try{
+      const changePasswordResult = await changePassword(password, email);
+      if (changePasswordResult.affectedRows) {
+        return res.send({status : STATUS_CODE.SUCCESS});
+      }
+    } catch (e){
+      console.log(e);
+      return res.send({status : STATUS_CODE.ERROR});
+    }
+  }
+
+  exports.changePassword = async (req, res) => {
+    const {password, email} = req.body;
+    //check for user status 
+    try {
+      const checkResult = await checkUser(email.toLowerCase());
+      if (checkResult.length === 0) {
+        return res.send({status: STATUS_CODE.INCORRECT_USER_EMAIL});
+      }
+      if (checkResult[0].status === REGISTRATION_STATUS.UNREGISTERED){
+        return res.send({status : STATUS_CODE.REQUEST_SIGN_UP});
+      }
+    } catch(e){
+      console.log(e);
+      return res.send({status: STATUS_CODE.ERROR});
+    }
+
+    // Creating a unique salt for a particular user 
+    try {
+      const changePasswordResult = await changePassword(password, email);
+      if (changePasswordResult.affectedRows) {
+        return res.send({status : STATUS_CODE.SUCCESS});
+      }
+    } catch (e){
+      console.log(e);
+      return res.send({status : STATUS_CODE.ERROR});
+    }
+  }
+
+  async function checkUser(email){
+    const queryEmail = `SELECT * FROM users WHERE email = ?`;
+
+    return new Promise((resolve, reject) => {
+      connection.query(queryEmail, [email], (err, res) => {
+        if (err) reject(err);
+        else resolve(res);
+      })
+    })
+  }
+
+  async function changePassword (password, email) {
     const salt = crypto.randomBytes(16).toString('hex'); 
     const query = `UPDATE users 
     SET hash = ?, salt = ?, status = 'registered'
     WHERE email = ?`;
     const hash = hashPassword(password, salt);
-
-    console.log("here");
-    connection.promise().query(query, [hash, salt, email])
-    .then(data => {
-      if (data[0].affectedRows) {
-        return res.send({status : STATUS_CODE.SUCCESS});
-      }
+    return new Promise((resolve, reject) => {
+      connection.query(query, [hash, salt, email], (err, res) => {
+        if (err) reject(err);
+        else resolve(res);
+      })
     })
-    .catch(error => {
-      console.log(error);
-      return res.send({ status: STATUS_CODE.ERROR});
-    });
   }
   
   function hashPassword (password, salt) {
@@ -92,3 +129,4 @@ exports.login = async (req, res) => {
      hash = crypto.pbkdf2Sync(password, salt, 1000, 64, `sha512`).toString(`hex`); 
      return hash;
   }
+
