@@ -6,11 +6,14 @@ const userController = require('../controllers/userController');
 routerUser.post('/sendVerificationEmail', userController.sendVerificationEmail);
 routerUser.get('/login', userController.login);
 routerUser.post('/signUp', userController.signUp);
-routerUser.post('/resetDatabase', userController.resetDatabase);
+
+routerUser.post('/resetUsers', userController.resetUsers);
 routerUser.post('/userLoadfromcsv', userController.loadfruserLoadfromcsvomcsv);
 routerUser.post('/createUser', userController.createUser);
-routerUser.get('/readUser', userController.readUser);
 routerUser.post('/updateUser', userController.updateUser);
 routerUser.post('/deleteUser', userController.deleteUser);
+
+routerUser.get('/readUser', userController.readUser);
+routerUser.get('/visionsNums', userController.visionsNums);
 
 module.exports = routerUser;
