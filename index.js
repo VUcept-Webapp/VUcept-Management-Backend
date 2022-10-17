@@ -19,6 +19,10 @@ const userRoute = require('./routes/user');
 app.use('/', userRoute);
 const authRoute = require('./routes/auth');
 app.use('/', authRoute);
+const VUAttendanceRoute = require('./routes/VUAttendance');
+app.use('/', VUAttendanceRoute);
+const calendarEventRoute = require('./routes/calendarEvent');
+app.use('/', calendarEventRoute);
 
 app.listen(port, () => console.log(`Listening on port ${port}`));
 
