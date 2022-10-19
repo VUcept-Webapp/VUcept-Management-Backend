@@ -1,10 +1,10 @@
 const crypto = require('crypto'); 
 const connection = require('../models/connection');
-const { STATUS_CODE, REGISTRATION_STATUS } = require('../lib/constants');
+const { STATUS_CODE, REGISTRATION_STATUS, transport } = require('../lib/constants');
 
   exports.login = async (req, res) => {
     const query = `SELECT * FROM users WHERE email = ?`;
-    const {email, password} = req.body;
+    const {email, password} = req.query;
     //check for user status 
     try {
       const checkResult = await checkUser(email.toLowerCase());
