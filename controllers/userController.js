@@ -99,7 +99,7 @@ exports.visionsNums = async (req, res) => {
 
   try {
     let maxVisions = await returnMaxVisions;
-    return res.send({ status: STATUS_CODE.SUCCESS, result: { max: maxVisions[0].visions, list: maxVisions }});
+    return res.send({ status: STATUS_CODE.SUCCESS, result: { list: maxVisions }});
   } catch (error){
     return res.send({ status: STATUS_CODE.ERROR, result: error });
   }
