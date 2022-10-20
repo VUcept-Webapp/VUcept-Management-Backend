@@ -71,7 +71,7 @@ exports.resetUsers = async (req, res) => {
 };
 
 //load with csv file
-exports.loadfruserLoadfromcsvomcsv = async (req, res) => {
+exports.userLoadfromcsv = async (req, res) => {
   const { file } = req.body;
   var duplicates = [];
 
@@ -304,9 +304,10 @@ exports.readUser = async (req, res) => {
   }
 };
 
+// return empty list when no value is found in DB
 // return the max Visions group number
 exports.visionsNums = async (req, res) => {
-  const query = 'SELECT DISTINCT visions FROM mydb.users ORDER BY visions DESC';
+  const query = 'SELECT DISTINCT visions FROM users ORDER BY visions DESC';
 
   const returnMaxVisions = new Promise((resolve, reject) => {
     connection.query(query, (err, res) => {
@@ -317,7 +318,7 @@ exports.visionsNums = async (req, res) => {
 
   try {
     let maxVisions = await returnMaxVisions;
-    return res.send({ status: STATUS_CODE.SUCCESS, result: { max: maxVisions[0].visions, list: maxVisions }});
+    return res.send({ status: STATUS_CODE.SUCCESS, result: { list: maxVisions }});
   } catch (error){
     return res.send({ status: STATUS_CODE.ERROR, result: error });
   }

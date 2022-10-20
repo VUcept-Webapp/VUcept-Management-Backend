@@ -9,12 +9,12 @@ exports.insertFy = ({ email, name, visions }) => {
   const query = 'INSERT INTO students (email, name, visions) VALUES (?,?,?)';
 
   return new Promise((resolve, reject) => {
-    connection.query(query, [email, name, type, visions], (err, res) => {
+    connection.query(query, [email, name, visions], (err, res) => {
       if (err) reject(err);
       else resolve(res);
     })
   })
-}
+};
 
 // Shared function: verifyFy
 exports.verifyFy = ( email ) => {
@@ -26,7 +26,7 @@ exports.verifyFy = ( email ) => {
       else resolve(res[0]);
     })
   });
-}
+};
 
 // Shared function: removeFy
 exports.removeFy = ( email ) => {
@@ -38,7 +38,7 @@ exports.removeFy = ( email ) => {
       else resolve(res);
     })
   });
-}
+};
 
 // Shared function: editFy
 exports.editFy = ({ old_email, email, name, visions }) => {
@@ -51,7 +51,7 @@ exports.editFy = ({ old_email, email, name, visions }) => {
       else resolve(res);
     })
   })
-}
+};
 
 //reset the Fy table
 exports.resetFy = async (req, res) => {
@@ -90,7 +90,7 @@ exports.fyLoadfromcsv = async (req, res) => {
       if (verify.NUM > 0) {
         duplicates.push(email);
       } else{
-        await this.insertFy({ email, name, type, visions });
+        await this.insertFy({ email, name, visions });
       }
     } catch (error) {
       return res.send({ status: STATUS_CODE.ERROR, result: error });
@@ -159,7 +159,7 @@ exports.deleteFy = async (req, res) => {
     return res.send({ status: STATUS_CODE.ERROR, result: error });
   }
   return res.send({ status: STATUS_CODE.SUCCESS});
-}
+};
 
 //get all first year students, return a json object
 exports.readFy = async (req, res) => {
@@ -189,7 +189,7 @@ exports.readFy = async (req, res) => {
   // create where string
   var where = '';
   const where_list = [name_search, email_search, visions_filter, vuceptor_search, vuceptor_filter];
-  const prefix_list = ['fy_name = ', 'email = ', 'visions = ', 'vu_name = ', 'vu_name = '];
+  const prefix_list = ['fy_name = ', 'fy_email = ', 'visions = ', 'vuceptor_name = ', 'vuceptor_name = '];
   for (let m = 0; m < where_list.length; m++){
     cond = where_list[m];
     prefix = prefix_list[m];
@@ -287,8 +287,8 @@ exports.readFy = async (req, res) => {
     console.log(error);
   });
 
-  const query = 'SELECT students.name AS fy_name, email, visions, users.name AS vu_name FROM students '
-   + ' JOIN users WHERE users.visions = students.visions' 
+  const query = 'SELECT students.name AS fy_name, students.email AS fy_email, students.visions, users.name AS vuceptor_name FROM students '
+   + ' LEFT JOIN users ON users.visions = students.visions' 
    +  where + orderby
    + ' LIMIT ' + row_num + ' OFFSET ' + row_start;
 
