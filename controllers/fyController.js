@@ -172,7 +172,8 @@ exports.readFy = async (req, res) => {
   const name_search = (!req.query.name_search) ? '' : JSON.parse(req.query.name_search);
   const email_search = (!req.query.email_search) ? '' : JSON.parse(req.query.email_search);
   const visions_filter = (!req.query.visions_filter) ? '' : JSON.parse(req.query.visions_filter);
-  
+  const vuceptor_search = (!req.query.vuceptor_search) ? '' : JSON.parse(req.query.vuceptor_search);
+  const vuceptor_filter = (!req.query.vuceptor_filter) ? '' : JSON.parse(req.query.vuceptor_filter);
   const row_start = (!req.query.row_start) ? 0 : req.query.row_start;
   const row_num = (!req.query.row_num) ? 50 : req.query.row_num;
 
@@ -187,8 +188,8 @@ exports.readFy = async (req, res) => {
 
   // create where string
   var where = '';
-  const where_list = [name_search, email_search, visions_filter];
-  const prefix_list = ['name = ', 'email = ', 'visions = '];
+  const where_list = [name_search, email_search, visions_filter, vuceptor_search, vuceptor_filter];
+  const prefix_list = ['fy_name = ', 'email = ', 'visions = ', 'vu_name = ', 'vu_name = '];
   for (let m = 0; m < where_list.length; m++){
     cond = where_list[m];
     prefix = prefix_list[m];
@@ -286,9 +287,9 @@ exports.readFy = async (req, res) => {
     console.log(error);
   });
 
-  const query = 'SELECT students.name AS Fy_name, email, visions, users.name AS VU_name FROM students '
-   +  where + orderby
+  const query = 'SELECT students.name AS fy_name, email, visions, users.name AS vu_name FROM students '
    + ' JOIN users WHERE users.visions = students.visions' 
+   +  where + orderby
    + ' LIMIT ' + row_num + ' OFFSET ' + row_start;
 
   const viewFy = new Promise((resolve, reject) => {
