@@ -4,7 +4,7 @@ const userController = require('../controllers/userController');
 
 // Routes
 routerUser.post('/resetUsers', userController.resetUsers);
-routerUser.post('/userLoadfromcsv', userController.loadfruserLoadfromcsvomcsv);
+routerUser.post('/userLoadfromcsv', userController.userLoadfromcsv);
 routerUser.post('/createUser', userController.createUser);
 routerUser.post('/updateUser', userController.updateUser);
 routerUser.post('/deleteUser', userController.deleteUser);

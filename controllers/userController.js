@@ -1,4 +1,4 @@
-const { STATUS_CODE, SORT_ORDER, TYPE } = require('../lib/constants');
+const { STATUS_CODE, SORT_ORDER } = require('../lib/constants');
 const connection = require('../models/connection');
 
 // Shared functions: insertUser
@@ -11,7 +11,7 @@ exports.insertUser = ({ email, name, type, visions }) => {
       else resolve(res);
     })
   })
-}
+};
 
 // Shared function: verifyUser
 exports.verifyUser = ( email ) => {
@@ -23,7 +23,7 @@ exports.verifyUser = ( email ) => {
       else resolve(res[0]);
     })
   });
-}
+};
 
 // Shared function: removeUser
 exports.removeUser = ( email ) => {
@@ -35,7 +35,7 @@ exports.removeUser = ( email ) => {
       else resolve(res);
     })
   });
-}
+};
 
 // Shared function: editUser
 exports.editUser = ({ old_email, email, name, type, visions }) => {
@@ -48,7 +48,7 @@ exports.editUser = ({ old_email, email, name, type, visions }) => {
       else resolve(res);
     })
   })
-}
+};
 
 //reset the user table
 exports.resetUsers = async (req, res) => {
@@ -157,7 +157,7 @@ exports.deleteUser = async (req, res) => {
     return res.send({ status: STATUS_CODE.ERROR, result: error });
   }
   return res.send({ status: STATUS_CODE.SUCCESS});
-}
+};
 
 //get all first year students, return a json object
 exports.readUser = async (req, res) => {
@@ -322,4 +322,4 @@ exports.visionsNums = async (req, res) => {
     return res.send({ status: STATUS_CODE.ERROR, result: error });
   }
 
-}
+};
