@@ -19,6 +19,8 @@ const userRoute = require('./routes/user');
 app.use('/', userRoute);
 const authRoute = require('./routes/auth');
 app.use('/', authRoute);
+const fyRoute = require('./routes/fy');
+app.use('/', fyRoute);
 
 app.listen(port, () => console.log(`Listening on port ${port}`));
 

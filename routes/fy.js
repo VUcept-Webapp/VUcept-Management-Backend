@@ -3,10 +3,12 @@ const routerFy = express.Router();
 const fyController = require('../controllers/fyController');
 
 // Routes
+routerFy.post('/resetFy', fyController.resetFy);
 routerFy.post('/fyLoadfromcsv', fyController.fyLoadfromcsv);
-routerFy.post('/createFirstyear', fyController.createFirstyear);
-routerFy.get('/readFirstyear', fyController.readFirstyear);
-routerFy.post('/updateFirstyear', fyController.updateFirstyear);
-routerFy.post('/deleteFirstyear', fyController.deleteFirstyear);
+routerFy.post('/createFy', fyController.createFy);
+routerFy.post('/updateFy', fyController.updateFy);
+routerFy.post('/deleteFy', fyController.deleteFy);
+
+routerFy.get('/readFy', fyController.readFy);
 
 module.exports = routerFy;
