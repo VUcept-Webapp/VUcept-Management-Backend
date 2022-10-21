@@ -277,7 +277,6 @@ exports.readFy = async (req, res) => {
     }
   })
 
-
   const query = 'SELECT students.name AS fy_name, students.email AS fy_email, students.visions, users.name AS vuceptor_name FROM students '
    + ' LEFT JOIN users ON users.visions = students.visions' 
    +  where + orderby
@@ -293,8 +292,7 @@ exports.readFy = async (req, res) => {
   //calculate the number of pages
   const queryCount = "SELECT COUNT(*) AS count FROM students"
    + ' LEFT JOIN users ON users.visions = students.visions' 
-   +  where + orderby
-   + ' LIMIT ' + row_num + ' OFFSET ' + row_start;
+   +  where + orderby;
 
   var pages = 0;
   await connection.promise().query(queryCount)
@@ -309,6 +307,48 @@ exports.readFy = async (req, res) => {
     var rows = await viewFy;
     return res.send({ status: STATUS_CODE.SUCCESS, result: {rows, pages}});
   } catch (error) {
+    return res.send({ status: STATUS_CODE.ERROR, result: error });
+  }
+};
+
+// return empty list when no value is found in DB
+// return the max Visions group number
+exports.fyVisionsNums = async (req, res) => {
+  const query = 'SELECT DISTINCT visions FROM students ORDER BY visions ASC';
+
+  const returnMaxVisions = new Promise((resolve, reject) => {
+    connection.query(query, (err, res) => {
+      if (err) reject(err);
+      else resolve(res);
+    })
+  });
+
+  try {
+    let maxVisions = await returnMaxVisions;
+    return res.send({ status: STATUS_CODE.SUCCESS, result: { list: maxVisions }});
+  } catch (error){
+    return res.send({ status: STATUS_CODE.ERROR, result: error });
+  }
+};
+
+// return empty list when no value is found in DB
+// return the max Visions group number
+exports.vuceptorList = async (req, res) => {
+  const query = 'SELECT DISTINCT name '
+  + 'FROM users WHERE type = \'vuceptor\' '
+  + 'ORDER BY name ASC';
+
+  const returnVUceptorList = new Promise((resolve, reject) => {
+    connection.query(query, (err, res) => {
+      if (err) reject(err);
+      else resolve(res);
+    })
+  });
+
+  try {
+    let vuceptorList = await returnVUceptorList;
+    return res.send({ status: STATUS_CODE.SUCCESS, result: { list: vuceptorList }});
+  } catch (error){
     return res.send({ status: STATUS_CODE.ERROR, result: error });
   }
 };

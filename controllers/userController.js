@@ -287,8 +287,7 @@ exports.readUser = async (req, res) => {
   });
 
   //calculate the number of pages
-  const queryCount = "SELECT COUNT(*) AS count FROM users" +  where + orderby +
-  ' LIMIT ' + row_num + ' OFFSET ' + row_start;
+  const queryCount = "SELECT COUNT(*) AS count FROM users" +  where + orderby;
   var pages = 0;
   await connection.promise().query(queryCount)
   .then(data => {
