@@ -275,16 +275,6 @@ exports.readUser = async (req, res) => {
     }
   })
 
-  //calculate the number of pages
-  const queryCount = "SELECT COUNT(*) AS count FROM users";
-  var pages = 0;
-  await connection.promise().query(queryCount)
-  .then(data => {
-    pages = Math.ceil(data[0][0].count/row_num);
-  })
-  .catch(error => {
-    console.log(error);
-  });
 
   const query = 'SELECT name, email, visions, type, status FROM users' +  where + orderby +
   ' LIMIT ' + row_num + ' OFFSET ' + row_start;
@@ -294,6 +284,18 @@ exports.readUser = async (req, res) => {
       if (err) reject(err);
       else resolve(res);
     })
+  });
+
+  //calculate the number of pages
+  const queryCount = "SELECT COUNT(*) AS count FROM users" +  where + orderby +
+  ' LIMIT ' + row_num + ' OFFSET ' + row_start;
+  var pages = 0;
+  await connection.promise().query(queryCount)
+  .then(data => {
+    pages = Math.ceil(data[0][0].count/row_num);
+  })
+  .catch(error => {
+    console.log(error);
   });
 
   try {
