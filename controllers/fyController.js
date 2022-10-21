@@ -163,12 +163,13 @@ exports.deleteFy = async (req, res) => {
 
 //get all first year students, return a json object
 exports.readFy = async (req, res) => {
-  const name_sort = (!req.query.name_sort) ? '' : ' name ' + req.query.name_sort;
-  const email_sort = (!req.query.email_sort) ? '' : ' email ' + req.query.email_sort;
-  const visions_sort = (!req.query.visions_sort) ? '' : ' visions ' + req.query.visions_sort;
+  const name_sort = (!req.query.name_sort) ? '' : ' students.name ' + req.query.name_sort;
+  const email_sort = (!req.query.email_sort) ? '' : ' students.email ' + req.query.email_sort;
+  const visions_sort = (!req.query.visions_sort) ? '' : ' students.visions ' + req.query.visions_sort;
   const condition_order = (!req.query.condition_order) ? null : JSON.parse(req.query.condition_order);
   
   // pass in array for all search/filtering options
+  // if passed in not an array, ERROR will occur (TODO: need to catch the error)
   const name_search = (!req.query.name_search) ? '' : JSON.parse(req.query.name_search);
   const email_search = (!req.query.email_search) ? '' : JSON.parse(req.query.email_search);
   const visions_filter = (!req.query.visions_filter) ? '' : JSON.parse(req.query.visions_filter);
@@ -189,7 +190,7 @@ exports.readFy = async (req, res) => {
   // create where string
   var where = '';
   const where_list = [name_search, email_search, visions_filter, vuceptor_search, vuceptor_filter];
-  const prefix_list = ['fy_name = ', 'fy_email = ', 'visions = ', 'vuceptor_name = ', 'vuceptor_name = '];
+  const prefix_list = ['students.name = ', 'students.email = ', 'students.visions = ', 'users.name = ', 'users.name = '];
   for (let m = 0; m < where_list.length; m++){
     cond = where_list[m];
     prefix = prefix_list[m];
@@ -301,7 +302,7 @@ exports.readFy = async (req, res) => {
 
   try {
     var rows = await viewFy;
-    return res.send({ status: STATUS_CODE.SUCCESS, result: {rows, pages}});
+    return res.send({ status: STATUS_CODE.SUCCESS, Q: query, result: {rows, pages}});
   } catch (error) {
     return res.send({ status: STATUS_CODE.ERROR, result: error });
   }
