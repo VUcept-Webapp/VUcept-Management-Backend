@@ -277,16 +277,6 @@ exports.readFy = async (req, res) => {
     }
   })
 
-  //calculate the number of pages
-  const queryCount = "SELECT COUNT(*) AS count FROM students";
-  var pages = 0;
-  await connection.promise().query(queryCount)
-  .then(data => {
-    pages = Math.ceil(data[0][0].count/row_num);
-  })
-  .catch(error => {
-    console.log(error);
-  });
 
   const query = 'SELECT students.name AS fy_name, students.email AS fy_email, students.visions, users.name AS vuceptor_name FROM students '
    + ' LEFT JOIN users ON users.visions = students.visions' 
@@ -300,9 +290,24 @@ exports.readFy = async (req, res) => {
     })
   });
 
+  //calculate the number of pages
+  const queryCount = "SELECT COUNT(*) AS count FROM students"
+   + ' LEFT JOIN users ON users.visions = students.visions' 
+   +  where + orderby
+   + ' LIMIT ' + row_num + ' OFFSET ' + row_start;
+
+  var pages = 0;
+  await connection.promise().query(queryCount)
+  .then(data => {
+    pages = Math.ceil(data[0][0].count/row_num);
+  })
+  .catch(error => {
+    console.log(error);
+  });
+
   try {
     var rows = await viewFy;
-    return res.send({ status: STATUS_CODE.SUCCESS, Q: query, result: {rows, pages}});
+    return res.send({ status: STATUS_CODE.SUCCESS, result: {rows, pages}});
   } catch (error) {
     return res.send({ status: STATUS_CODE.ERROR, result: error });
   }
