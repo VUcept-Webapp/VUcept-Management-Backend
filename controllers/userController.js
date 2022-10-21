@@ -308,7 +308,7 @@ exports.readUser = async (req, res) => {
 // return empty list when no value is found in DB
 // return the max Visions group number
 exports.visionsNums = async (req, res) => {
-  const query = 'SELECT DISTINCT visions FROM users ORDER BY visions DESC';
+  const query = 'SELECT DISTINCT visions FROM users ORDER BY visions ASC';
 
   const returnMaxVisions = new Promise((resolve, reject) => {
     connection.query(query, (err, res) => {
