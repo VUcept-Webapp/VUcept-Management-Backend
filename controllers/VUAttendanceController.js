@@ -1,27 +1,33 @@
 const connection = require('../models/connection');
 const {STATUS_CODE,SORT_ORDER } = require('../lib/constants');
+const {concateCommand} = require('../lib/helpers');
 
-const concateCommand = (type, conditions) =>{
-    var cmd = '';
-    if (type === 'string') {
-        for (const condition of conditions){
-            cmd +=  '\'' + condition  + '\'' + ' OR ';
-       }
-    } else if (type === 'int'){
-        for (const condition of conditions){
-           cmd += condition  + ' OR ';
-       }
-    }
-    return cmd.substring(0, cmd.length - 4);
-}
 
 exports.readVUAttendance = async (req, res) => {
+    //result of attendance should be before current time 
+    const endTimeClause = ` CONCAT(date, " ", end_time) < CONVERT_TZ(NOW(),\'GMT\',\'US/Central\') AND `;
+    //set time range, which will be passed in as array of size 2
+    const timeRange = (!req.query.time_range) ? '' : JSON.parse(req.query.time_range);
+    const dateClause =  timeRange  == '' ? '' : ' date >= \'' + timeRange[0] + '\' AND date <= \'' + timeRange[1] + '\' AND ';
+    var tempWhere = ' WHERE ' + endTimeClause + dateClause 
+    //check if number of absences are entered
+    const numAbsence = (!req.query.num_absence) ? '' : req.query.num_absence;
+    const absenceClause =  numAbsence == '' ? '' : 
+    ` attendance = 'absent' AND
+        email in (
+            SELECT email FROM vu_attendance ` + tempWhere + `
+            attendance = 'absent'
+            GROUP BY email 
+            HAVING count(*) >= ` + numAbsence + `) AND `;
+    //create where clause based on time range and num absence 
+    tempWhere += absenceClause;
+
     // check parameters: sort
     const sort_list = [req.query.name_sort, req.query.email_sort, req.query.visions_sort, req.query.events_sort, req.query.status_sort];
     for (const sort of sort_list){
         if (sort && (sort !== SORT_ORDER.ASC) && (sort !== SORT_ORDER.DESC)){
-        console.log("SORT ERROR\n");
-        return res.send({ status: STATUS_CODE.UNKNOWN_SORT});
+            console.log("SORT ERROR\n");
+            return res.send({ status: STATUS_CODE.UNKNOWN_SORT});
         }
     }
     //sort conditions
@@ -53,7 +59,7 @@ exports.readVUAttendance = async (req, res) => {
                 case "status_sort":
                   tempOrderBy += status_sort + ',';
                   break;
-              }
+            }
         }
     }
     //form the const order by clause and get rid of "," in the end
@@ -70,43 +76,41 @@ exports.readVUAttendance = async (req, res) => {
     const row_num = (!req.query.row_num) ? 50 : req.query.row_num;
 
     // create where string from search and filter conditions
-    var tempWhere = 'WHERE ';
     const whereList = [name_search, email_search, status_filter, visions_filter, events_filter];
     const prefixList = ['name = ', 'email = ', 'status = ', 'visions = ', 'event = '];
 
     for (var i = 0; i < whereList.length; ++i){
         const whereData = whereList[i];
         if (whereData !== ''){
-            const whereClause = prefixList[i] + concateCommand(whereData.type, whereData.data);
-            tempWhere += whereClause + ' AND ';
+            tempWhere += concateCommand(whereData.type, prefixList[i], whereData.data) + ' AND ';
         }
     }
     //form the const where clause and get rid of "AND" in the end
-    const where = (tempWhere === 'WHERE ') ? '' : tempWhere.substring(0, tempWhere.length - 4);
+    const where = (tempWhere.startsWith("AND "), tempWhere.length - 5) ? tempWhere.substring(0, tempWhere.length - 4) : tempWhere;
 
     //form the query
-    const query = `SELECT * FROM vu_attendance ` + where + orderBy + ' LIMIT ' + row_num + ' OFFSET ' + row_start;
+    const query = `SELECT name, email, visions, title AS event, attendance AS status FROM vu_attendance ` 
+    + where + orderBy + ' LIMIT ' + row_num + ' OFFSET ' + row_start;
     const viewusers = new Promise((resolve, reject) => {
-        connection.query(query, (err, res) => {
+        connection.query(query,(err, res) => {
           if (err) reject(err);
           else resolve(res);
         })
       });
+    
     //count number of pages 
-    const queryCount = `SELECT COUNT(*) AS count FROM vu_attendance`;
-    var pages = 0;
-    await connection.promise().query(queryCount)
-    .then(data => {
-        pages = Math.ceil(data[0][0].count/row_num);
-    })
-    .catch(error => {
-        console.log(error);
+    const queryCount = `SELECT COUNT(*) AS count FROM vu_attendance ` + where;
+    const pages = new Promise((resolve, reject) => {
+        connection.query(queryCount,(err, res) => {
+          if (err) reject(err);
+          else resolve(Math.ceil(res[0].count/row_num));
+        })
     });
 
     try {
         const rows = await viewusers;
-        // const pages = countPages(vu_attendance);
-        return res.send({ status: STATUS_CODE.SUCCESS, result: {rows, pages}});
+        const pageNum = await pages;
+        return res.send({ status: STATUS_CODE.SUCCESS, result: {rows, pageNum}});
     } catch (error) {
         return res.send({ status: STATUS_CODE.ERROR, result: error });
     }
@@ -114,15 +118,9 @@ exports.readVUAttendance = async (req, res) => {
 
 exports.insertVUAttendance =  async (req, res) => {
     const {VUId, eventID, attendance} = req.body;
-    //check for event
-    const checkEventResult = await checkEvent(eventID);
-    if (checkEventResult) return res.send(checkEventResult);
-    //check for vuceptor
-    const checkVUCeptorResult = await checkVUCeptor(VUId);
-    if (checkVUCeptorResult) return res.send(checkVUCeptorResult);
-    //check for existing records 
-    const checkExistingRecordResult = await checkExistingVUAttendance(eventID, VUId);
-    if (checkExistingRecordResult) return res.send(checkExistingRecordResult);
+    //check for insertion validity: event, vuid
+    const checkValidityResult = await checkVUAttendanceValidity(VUId, eventID);
+    if (checkValidityResult) return res.send(checkValidityResult);
 
     //insert vuceptor attendance record
     const query = 'INSERT INTO vuceptor_attendance (vuceptor_id, event_id, attendance) VALUES (?,?,?)';
@@ -201,5 +199,41 @@ const checkExistingVUAttendance= async (eventID, userID) => {
     } catch (e){
         console.log(e);
         return {status : STATUS_CODE.ERROR};
+    }
+}
+
+const checkVUAttendanceValidity = async (VUId, eventID) => {
+    //check for event
+    const checkEventResult = await checkEvent(eventID);
+    if (checkEventResult) return checkEventResult;
+    //check for vuceptor
+    const checkVUCeptorResult = await checkVUCeptor(VUId);
+    if (checkVUCeptorResult) return checkVUCeptorResult;
+    //check for existing records 
+    const checkExistingRecordResult = await checkExistingVUAttendance(eventID, VUId);
+    if (checkExistingRecordResult) return checkExistingRecordResult;
+}
+
+exports.editVUAttendance =  async (req, res) => {
+    const {VUId, eventID, attendance} = req.body;
+    const checkValidityResult = await checkVUAttendanceValidity(VUId, eventID);
+    if (checkValidityResult) return res.send(checkValidityResult);
+
+    //insert vuceptor attendance record
+    const query = `UPDATE users SET email = ?, name = ?, type = ?, visions = ? WHERE email = ?;`;
+    const addVUAttendance = new Promise((resolve, reject) => {
+      connection.query(query, [VUId, eventID, attendance], (err, res) => {
+        if (err) reject(err);
+        else resolve(res);
+      })
+    });
+    try {
+        const addVUAttendanceResult = await addVUAttendance;
+        if (addVUAttendanceResult.affectedRows){
+            return res.send({status: STATUS_CODE.SUCCESS});
+        }
+    } catch (e){
+        console.log(e);
+        return res.send({status: STATUS_CODE.ERROR});
     }
 }
