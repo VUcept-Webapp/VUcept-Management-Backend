@@ -188,9 +188,10 @@ exports.readFy = async (req, res) => {
   }
 
   // create where string
+  // Note: Make sure visions_filter is last in the where_list
   var where = '';
-  const where_list = [name_search, email_search, visions_filter, vuceptor_search, vuceptor_filter];
-  const prefix_list = ['students.name = ', 'students.email = ', 'students.visions = ', 'users.name = ', 'users.name = '];
+  const where_list = [name_search, email_search, vuceptor_search, vuceptor_filter, visions_filter];
+  const prefix_list = ['students.name = ', 'students.email = ', 'users.name = ', 'users.name = ', 'students.visions = '];
   for (let m = 0; m < where_list.length; m++){
     cond = where_list[m];
     prefix = prefix_list[m];
