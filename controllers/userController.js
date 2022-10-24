@@ -1,25 +1,7 @@
-const { STATUS_CODE, SORT_ORDER, TYPE } = require('../lib/constants');
+const { STATUS_CODE, SORT_ORDER } = require('../lib/constants');
 const connection = require('../models/connection');
-//reset the entire database and delete all information
-exports.resetDatabase = async (req, res) => {
-  const query = `DELETE FROM users;`;
 
-  const reset = new Promise((resolve, reject) => {
-    connection.query(query, (err, res) => {
-      if (err) reject(err);
-      else resolve(res);
-    })
-  });
-  
-  try {
-    await reset;
-  } catch (error){
-    return res.send({ status: STATUS_CODE.ERROR, result: error });
-  }
-  return res.send({ status: STATUS_CODE.SUCCESS });
-};
-
-// Shared functions
+// Shared functions: insertUser
 exports.insertUser = ({ email, name, type, visions }) => {
   const query = 'INSERT INTO users (email, name, type, status, visions) VALUES (?,?,?,\'unregistered\',?)';
 
@@ -29,7 +11,8 @@ exports.insertUser = ({ email, name, type, visions }) => {
       else resolve(res);
     })
   })
-}
+};
+
 // Shared function: verifyUser
 exports.verifyUser = ( email ) => {
   const queryCheck = 'SELECT COUNT(email) AS NUM FROM users WHERE email = ?';
@@ -40,7 +23,8 @@ exports.verifyUser = ( email ) => {
       else resolve(res[0]);
     })
   });
-}
+};
+
 // Shared function: removeUser
 exports.removeUser = ( email ) => {
   const query = `DELETE FROM users WHERE email = ?`;
@@ -51,7 +35,8 @@ exports.removeUser = ( email ) => {
       else resolve(res);
     })
   });
-}
+};
+
 // Shared function: editUser
 exports.editUser = ({ old_email, email, name, type, visions }) => {
   const query = `UPDATE users SET email = ?, name = ?, type = ?, visions = ? WHERE email = ?;`;
@@ -63,8 +48,7 @@ exports.editUser = ({ old_email, email, name, type, visions }) => {
       else resolve(res);
     })
   })
-}
-
+};
 
 //reset the user table
 exports.resetUsers = async (req, res) => {
@@ -86,28 +70,8 @@ exports.resetUsers = async (req, res) => {
   return res.send({ status: STATUS_CODE.SUCCESS });
 };
 
-// return the max Visions group number
-exports.visionsNums = async (req, res) => {
-  const query = 'SELECT DISTINCT visions FROM mydb.users ORDER BY visions DESC';
-
-  const returnMaxVisions = new Promise((resolve, reject) => {
-    connection.query(query, (err, res) => {
-      if (err) reject(err);
-      else resolve(res);
-    })
-  });
-
-  try {
-    let maxVisions = await returnMaxVisions;
-    return res.send({ status: STATUS_CODE.SUCCESS, result: { max: maxVisions[0].visions, list: maxVisions }});
-  } catch (error){
-    return res.send({ status: STATUS_CODE.ERROR, result: error });
-  }
-
-}
-
 //load with csv file
-exports.loadfruserLoadfromcsvomcsv = async (req, res) => {
+exports.userLoadfromcsv = async (req, res) => {
   const { file } = req.body;
   var duplicates = [];
 
@@ -158,6 +122,41 @@ exports.createUser = async (req, res) => {
   }
 
   return res.send({ status: STATUS_CODE.ERROR });
+};
+
+//edit one user
+exports.updateUser = async (req, res) => {
+  const { old_email, email, name, type, visions } = req.body;
+
+  try{
+    let result = await this.editUser({ old_email, email, name, type, visions });
+    return res.send({ status: STATUS_CODE.SUCCESS });
+  } catch (error){
+    return res.send({ status: STATUS_CODE.ERROR, result: error });
+  }
+
+};
+
+//delete one user
+exports.deleteUser = async (req, res) => {
+  try{
+    const email = req.body.email;
+   
+    let verify = await this.verifyUser( email );
+
+    if (verify.NUM == 0) {
+      return res.send({ status: STATUS_CODE.INCORRECT_USER_EMAIL, result: email });
+    }
+
+    let result = await this.removeUser( email );
+
+    if (result.affectedRows){
+      return res.send({ status: STATUS_CODE.SUCCESS });
+    }
+  } catch (error) {
+    return res.send({ status: STATUS_CODE.ERROR, result: error });
+  }
+  return res.send({ status: STATUS_CODE.SUCCESS});
 };
 
 //get all first year students, return a json object
@@ -275,16 +274,6 @@ exports.readUser = async (req, res) => {
     }
   })
 
-  //calculate the number of pages
-  const queryCount = "SELECT COUNT(*) AS count FROM users";
-  var pages = 0;
-  await connection.promise().query(queryCount)
-  .then(data => {
-    pages = Math.ceil(data[0][0].count/row_num);
-  })
-  .catch(error => {
-    console.log(error);
-  });
 
   const query = 'SELECT name, email, visions, type, status FROM users' +  where + orderby +
   ' LIMIT ' + row_num + ' OFFSET ' + row_start;
@@ -296,6 +285,17 @@ exports.readUser = async (req, res) => {
     })
   });
 
+  //calculate the number of pages
+  const queryCount = "SELECT COUNT(*) AS count FROM users" +  where + orderby;
+  var pages = 0;
+  await connection.promise().query(queryCount)
+  .then(data => {
+    pages = Math.ceil(data[0][0].count/row_num);
+  })
+  .catch(error => {
+    console.log(error);
+  });
+
   try {
     var rows = await viewusers;
     return res.send({ status: STATUS_CODE.SUCCESS, result: {rows, pages}});
@@ -304,35 +304,21 @@ exports.readUser = async (req, res) => {
   }
 };
 
-//delete one user
-exports.deleteUser = async (req, res) => {
-  try{
-    const email = req.body.email;
-   
-    let verify = await this.verifyUser( email );
+// return empty list when no value is found in DB
+// return the max Visions group number
+exports.visionsNums = async (req, res) => {
+  const query = 'SELECT DISTINCT visions FROM users ORDER BY visions ASC';
 
-    if (verify.NUM == 0) {
-      return res.send({ status: STATUS_CODE.INCORRECT_USER_EMAIL, result: email });
-    }
+  const returnMaxVisions = new Promise((resolve, reject) => {
+    connection.query(query, (err, res) => {
+      if (err) reject(err);
+      else resolve(res);
+    })
+  });
 
-    let result = await this.removeUser( email );
-
-    if (result.affectedRows){
-      return res.send({ status: STATUS_CODE.SUCCESS });
-    }
-  } catch (error) {
-    return res.send({ status: STATUS_CODE.ERROR, result: error });
-  }
-  return res.send({ status: STATUS_CODE.SUCCESS});
-}
-
-//edit one user
-exports.updateUser = async (req, res) => {
-  const { old_email, email, name, type, visions } = req.body;
-
-  try{
-    let result = await this.editUser({ old_email, email, name, type, visions });
-    return res.send({ status: STATUS_CODE.SUCCESS });
+  try {
+    let maxVisions = await returnMaxVisions;
+    return res.send({ status: STATUS_CODE.SUCCESS, result: { list: maxVisions }});
   } catch (error){
     return res.send({ status: STATUS_CODE.ERROR, result: error });
   }
