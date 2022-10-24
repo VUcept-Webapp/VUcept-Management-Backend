@@ -116,11 +116,84 @@ exports.readVUAttendance = async (req, res) => {
     }
 }
 
+//check if there will be repeated attendance record
+const checkExistingVUAttendance= async (eventID, userID) => {
+    const query = 'SELECT COUNT(*) AS count FROM vuceptor_attendance WHERE vuceptor_id = ? AND event_id = ?';
+    const performCheckExistingRecord= new Promise((resolve, reject) => {
+        connection.query(query, [userID, eventID], (err, res) => {
+          if (err) reject(err);
+          else resolve(res[0]);
+        })
+    });
+
+    try {
+        const checkExistingRecordResult = await performCheckExistingRecord;
+        if (checkExistingRecordResult.count === 0) {
+            return {status: STATUS_CODE.NO_EXISTING_RECORDS};
+        } else {
+            return {status: STATUS_CODE.REPEATED_RECORDS};
+        }
+    } catch (e){
+        console.log(e);
+        return {status : STATUS_CODE.ERROR};
+    }
+}
+
+const findVUIDByEmail = async (email) =>{
+    const query = 'SELECT user_id FROM users WHERE email = ?';
+    const performFindID = new Promise((resolve, reject) => {
+        connection.query(query, email, (err, res) => {
+          if (err) reject(err);
+          else resolve(res[0]);
+        })
+    });
+
+    try {
+        const VUId = await performFindID;
+        if (VUId) {
+            return {status: STATUS_CODE.SUCCESS, id: VUId.user_id};
+        } else {
+            return {status: STATUS_CODE.INVALID_USER}
+        }
+    } catch (e){
+        console.log(e);
+        return {status : STATUS_CODE.ERROR};
+    }
+}
+
+const findEventIDByTitle = async (email) =>{
+    const query = 'SELECT event_id FROM vuceptor_events WHERE title = ?';
+    const performFindID = new Promise((resolve, reject) => {
+        connection.query(query, email, (err, res) => {
+          if (err) reject(err);
+          else resolve(res[0]);
+        })
+    });
+
+    try {
+        const eventId = await performFindID;
+        if (eventId) {
+            return {status: STATUS_CODE.SUCCESS, id: eventId.event_id};
+        } else {
+            return {status: STATUS_CODE.INVALID_VU_EVENT}
+        }
+    } catch (e){
+        console.log(e);
+        return {status : STATUS_CODE.ERROR};
+    }
+}
+
+
 exports.insertVUAttendance =  async (req, res) => {
-    const {VUId, eventID, attendance} = req.body;
+    const {email, event, attendance} = req.body;
+    //find vuceptor id and event id 
+    const findVUID = await findVUIDByEmail(email);
+    if (findVUID.status != STATUS_CODE.SUCCESS) return res.send(findVUID);
+    const findEventID = await findEventIDByTitle(event);
+    if (findEventID.status != STATUS_CODE.SUCCESS) return res.send(findEventID);
     //check for insertion validity: event, vuid
-    const checkValidityResult = await checkVUAttendanceValidity(VUId, eventID);
-    if (checkValidityResult) return res.send(checkValidityResult);
+    const checkRepeatResult = await checkExistingVUAttendance(findVUID.id, findEventID.id);
+    if (checkRepeatResult.status !== STATUS_CODE.NO_EXISTING_RECORDS) return res.send(checkRepeatResult);
 
     //insert vuceptor attendance record
     const query = 'INSERT INTO vuceptor_attendance (vuceptor_id, event_id, attendance) VALUES (?,?,?)';
@@ -141,95 +214,57 @@ exports.insertVUAttendance =  async (req, res) => {
     }
 }
 
-//check if an event exists in the database
-const checkEvent = async (eventID) => {
-    const query = 'SELECT COUNT(*) AS count FROM vuceptor_events WHERE event_id = ?';
-    const performCheckEvent = new Promise((resolve, reject) => {
-        connection.query(query, [eventID], (err, res) => {
-          if (err) reject(err);
-          else resolve(res[0]);
-        })
-    });
-    try {
-        const checkEventResult = await performCheckEvent;
-        if (checkEventResult.count === 0) {
-            return {status: STATUS_CODE.INVALID_VU_EVENT};
-        }
-    } catch (e){
-        console.log(e);
-        return {status : STATUS_CODE.ERROR};
-    }
-}
-
-//check if a user exists in the database
-const checkVUCeptor = async (userID) => {
-    const query = 'SELECT COUNT(*) AS count FROM users WHERE user_id = ?';
-    const performCheckEvent = new Promise((resolve, reject) => {
-        connection.query(query, [userID], (err, res) => {
-          if (err) reject(err);
-          else resolve(res[0]);
-        })
-    });
-    try {
-        const checkVUCeptorResult = await performCheckEvent;
-        if (checkVUCeptorResult.count === 0) {
-            return {status: STATUS_CODE.INVALID_USER};
-        }
-    } catch (e){
-        console.log(e);
-        return {status : STATUS_CODE.ERROR};
-    }
-}
-
-//check if there will be repeated attendance record
-const checkExistingVUAttendance= async (eventID, userID) => {
-    const query = 'SELECT COUNT(*) AS count FROM vuceptor_attendance WHERE vuceptor_id = ? AND event_id = ?';
-    const performCheckExistingRecord= new Promise((resolve, reject) => {
-        connection.query(query, [userID, eventID], (err, res) => {
-          if (err) reject(err);
-          else resolve(res[0]);
-        })
-    });
-
-    try {
-        const checkExistingRecordResult = await performCheckExistingRecord;
-        if (checkExistingRecordResult.count !== 0) {
-            return {status: STATUS_CODE.REPEATED_RECORDS};
-        }
-    } catch (e){
-        console.log(e);
-        return {status : STATUS_CODE.ERROR};
-    }
-}
-
-const checkVUAttendanceValidity = async (VUId, eventID) => {
-    //check for event
-    const checkEventResult = await checkEvent(eventID);
-    if (checkEventResult) return checkEventResult;
-    //check for vuceptor
-    const checkVUCeptorResult = await checkVUCeptor(VUId);
-    if (checkVUCeptorResult) return checkVUCeptorResult;
-    //check for existing records 
-    const checkExistingRecordResult = await checkExistingVUAttendance(eventID, VUId);
-    if (checkExistingRecordResult) return checkExistingRecordResult;
-}
-
 exports.editVUAttendance =  async (req, res) => {
-    const {VUId, eventID, attendance} = req.body;
-    const checkValidityResult = await checkVUAttendanceValidity(VUId, eventID);
-    if (checkValidityResult) return res.send(checkValidityResult);
+    const {email, event, attendance} = req.body;
+    //find vuceptor id and event id 
+    const findVUID = await findVUIDByEmail(email);
+    if (findVUID.status != STATUS_CODE.SUCCESS) return res.send(findVUID);
+    const findEventID = await findEventIDByTitle(event);
+    if (findEventID.status != STATUS_CODE.SUCCESS) return res.send(findEventID);
+    //check validity of record
+    const checkExistingResult = await checkExistingVUAttendance(findVUID.id, findEventID.id);
+    if (checkExistingResult.status !== STATUS_CODE.REPEATED_RECORDS) return res.send(checkExistingResult);
 
-    //insert vuceptor attendance record
-    const query = `UPDATE users SET email = ?, name = ?, type = ?, visions = ? WHERE email = ?;`;
-    const addVUAttendance = new Promise((resolve, reject) => {
-      connection.query(query, [VUId, eventID, attendance], (err, res) => {
+    //update vuceptor attendance record
+    const query = `UPDATE vuceptor_attendance SET attendance = ? WHERE vuceptor_id = ? AND event_id = ?;`;
+    const editVUAttendance = new Promise((resolve, reject) => {
+      connection.query(query, [attendance, findVUID.id, findEventID.id], (err, res) => {
         if (err) reject(err);
         else resolve(res);
       })
     });
     try {
-        const addVUAttendanceResult = await addVUAttendance;
-        if (addVUAttendanceResult.affectedRows){
+        const editVUAttendanceResult = await editVUAttendance;
+        if (editVUAttendanceResult.affectedRows){
+            return res.send({status: STATUS_CODE.SUCCESS});
+        }
+    } catch (e){
+        console.log(e);
+        return res.send({status: STATUS_CODE.ERROR});
+    }
+}
+
+exports.deleteVUAttendance =  async (req, res) => {
+    const {email, event} = req.body;
+    //find vuceptor id and event id 
+    const findVUID = await findVUIDByEmail(email);
+    if (findVUID.status != STATUS_CODE.SUCCESS) return res.send(findVUID);
+    const findEventID = await findEventIDByTitle (event);
+    if (findEventID.status != STATUS_CODE.SUCCESS) return res.send(findEventID);
+    //check validity of record
+    const checkExistingResult = await checkExistingVUAttendance(findVUID.id, findEventID.id);
+    if (checkExistingResult.status !== STATUS_CODE.REPEATED_RECORDS) return res.send(checkExistingResult);
+    //update vuceptor attendance record
+    const query = `DELETE FROM vuceptor_attendance WHERE vuceptor_id = ? AND event_id = ?;`;
+    const deleteVUAttendance = new Promise((resolve, reject) => {
+      connection.query(query, [findVUID.id, findEventID.id], (err, res) => {
+        if (err) reject(err);
+        else resolve(res);
+      })
+    });
+    try {
+        const deleteVUAttendanceResult = await deleteVUAttendance;
+        if (deleteVUAttendanceResult.affectedRows){
             return res.send({status: STATUS_CODE.SUCCESS});
         }
     } catch (e){

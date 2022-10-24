@@ -6,5 +6,6 @@ const VUAttendanceController = require('../controllers/VUAttendanceController');
 routerVUAttendance.get('/readVUAttendance', VUAttendanceController.readVUAttendance);
 routerVUAttendance.post('/insertVUAttendance', VUAttendanceController.insertVUAttendance);
 routerVUAttendance.post('/editVUAttendance', VUAttendanceController.editVUAttendance);
+routerVUAttendance.post('/deleteVUAttendance', VUAttendanceController.deleteVUAttendance);
 
 module.exports = routerVUAttendance;
