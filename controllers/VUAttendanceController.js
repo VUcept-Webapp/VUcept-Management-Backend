@@ -1,7 +1,10 @@
 const connection = require('../models/connection');
 const {STATUS_CODE,SORT_ORDER } = require('../lib/constants');
 const {concateCommand} = require('../lib/helpers');
+var dataExporter = require('json2csv').Parser;
 
+//global variable to cache current read data 
+var currentRead;
 
 exports.readVUAttendance = async (req, res) => {
     //result of attendance should be before current time 
@@ -109,6 +112,7 @@ exports.readVUAttendance = async (req, res) => {
 
     try {
         const rows = await viewusers;
+        currentRead = rows;
         const pageNum = await pages;
         return res.send({ status: STATUS_CODE.SUCCESS, result: {rows, pageNum}});
     } catch (error) {
@@ -270,5 +274,22 @@ exports.deleteVUAttendance =  async (req, res) => {
     } catch (e){
         console.log(e);
         return res.send({status: STATUS_CODE.ERROR});
+    }
+}
+
+exports.exportVUAttendance =  async (req, res) => {
+    if (currentRead){
+        //convert JSON to CSV Data
+        var fileHeader = ['Name', 'Email', 'Visions', 'Event', 'Status'];
+        var jsonData = new dataExporter({fileHeader});
+        console.log(currentRead);
+        var csvData = jsonData.parse(currentRead);
+        
+        res.setHeader("Content-Type", "text/csv");
+        res.setHeader("Content-Disposition", "attachment; filename=vuceptor_attendance_data.csv");
+        res.send({status: STATUS_CODE.SUCCESS, data: csvData});
+        // res.send({status: STATUS_CODE.SUCCESS});
+    } else {
+        res.send({status: STATUS_CODE.EMPTY_DATA});
     }
 }
