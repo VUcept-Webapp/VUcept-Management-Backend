@@ -293,7 +293,7 @@ exports.exportVUAttendance =  async (req, res) => {
     }
 }
 
-exports.getVisionsList =  async (req, res) => {
+exports.getVUAttendanceVisionsList =  async (req, res) => {
     const query = `SELECT DISTINCT visions from vu_attendance`;
     const getVisions = new Promise((resolve, reject) => {
       connection.query(query, (err, res) => {
@@ -314,7 +314,7 @@ exports.getVisionsList =  async (req, res) => {
     }
 }
 
-exports.getEventsList =  async (req, res) => {
+exports.getVUAttendanceEventsList =  async (req, res) => {
     const query = `SELECT DISTINCT title from vu_attendance`;
     const getEvents = new Promise((resolve, reject) => {
       connection.query(query, (err, res) => {
