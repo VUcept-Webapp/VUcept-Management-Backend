@@ -181,7 +181,7 @@ exports.readUser = async (req, res) => {
   for (var i = 0; i < sort_list.length; ++i){
     if (sort_list[i] && (sort_list[i] !== SORT_ORDER.ASC) && (sort_list[i] !== SORT_ORDER.DESC)){
       console.log("SORT ERROR\n");
-      return res.send({ status: STATUS_CODE.UNKNOWN_SORT });
+      return res.send({ status: STATUS_CODE.UNKNOWN_SORT});
     }
   }
 
@@ -217,7 +217,6 @@ exports.readUser = async (req, res) => {
         where = where + ' AND (' + tmp + ')';
       } else {
         let tmp = '';
-
         // initialize
         if (m == (where_list.length - 1)){ // visions_filter
           tmp = prefix + cond[0];
@@ -249,7 +248,7 @@ exports.readUser = async (req, res) => {
     orderby_list = [name_sort, email_sort, visions_sort];
   } else {
     for(let i = 0; i < condition_order.length; i++){
-      let cond = condition_order[i];
+      var cond = condition_order[i];
   
       switch (cond) {
         case "name_sort":
