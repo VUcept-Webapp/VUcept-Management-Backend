@@ -166,6 +166,8 @@ const findVUIDByEmail = async (email) =>{
     }
 }
 
+
+
 const findEventIDByTitle = async (email) =>{
     const query = 'SELECT event_id FROM vuceptor_events WHERE title = ?';
     const performFindID = new Promise((resolve, reject) => {
@@ -290,5 +292,47 @@ exports.exportVUAttendance =  async (req, res) => {
         res.send({status: STATUS_CODE.SUCCESS, data: csvData});
     } else {
         res.send({status: STATUS_CODE.EMPTY_DATA});
+    }
+}
+
+exports.getVisionsList =  async (req, res) => {
+    const query = `SELECT DISTINCT visions from vu_attendance`;
+    const getVisions = new Promise((resolve, reject) => {
+      connection.query(query, (err, res) => {
+        if (err) reject(err);
+        else resolve(res);
+      })
+    });
+    try {
+        const visionsResults = await getVisions;
+        var visionsArray = [];
+        for (var i = 0; i < visionsResults.length; ++i){
+            visionsArray.push (visionsResults[i].visions);
+        }
+        return res.send({status: STATUS_CODE.SUCCESS, data: visionsArray});
+    } catch (e){
+        console.log(e);
+        return res.send({status: STATUS_CODE.ERROR});
+    }
+}
+
+exports.getEventsList =  async (req, res) => {
+    const query = `SELECT DISTINCT title from vu_attendance`;
+    const getEvents = new Promise((resolve, reject) => {
+      connection.query(query, (err, res) => {
+        if (err) reject(err);
+        else resolve(res);
+      })
+    });
+    try {
+        const eventsResults = await getEvents;
+        var eventsArray = [];
+        for (var i = 0; i <  eventsResults.length; ++i){
+            eventsArray.push (eventsResults[i].title);
+        }
+        return res.send({status: STATUS_CODE.SUCCESS, data: eventsArray});
+    } catch (e){
+        console.log(e);
+        return res.send({status: STATUS_CODE.ERROR});
     }
 }
