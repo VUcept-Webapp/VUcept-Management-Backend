@@ -166,8 +166,6 @@ const findVUIDByEmail = async (email) =>{
     }
 }
 
-
-
 const findEventIDByTitle = async (email) =>{
     const query = 'SELECT event_id FROM vuceptor_events WHERE title = ?';
     const performFindID = new Promise((resolve, reject) => {
@@ -306,8 +304,8 @@ exports.getVisionsList =  async (req, res) => {
     try {
         const visionsResults = await getVisions;
         var visionsArray = [];
-        for (var i = 0; i < visionsResults.length; ++i){
-            visionsArray.push (visionsResults[i].visions);
+        for (const result of visionsResults){
+            visionsArray.push(result.visions);
         }
         return res.send({status: STATUS_CODE.SUCCESS, data: visionsArray});
     } catch (e){
@@ -327,8 +325,8 @@ exports.getEventsList =  async (req, res) => {
     try {
         const eventsResults = await getEvents;
         var eventsArray = [];
-        for (var i = 0; i <  eventsResults.length; ++i){
-            eventsArray.push (eventsResults[i].title);
+        for (const result of eventsResults){
+            eventsArray.push(result.title);
         }
         return res.send({status: STATUS_CODE.SUCCESS, data: eventsArray});
     } catch (e){
