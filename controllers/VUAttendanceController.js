@@ -37,8 +37,8 @@ exports.readVUAttendance = async (req, res) => {
     const name_sort = (!req.query.name_sort) ? '' : ' name ' + req.query.name_sort;
     const email_sort = (!req.query.email_sort) ? '' : ' email ' + req.query.email_sort;
     const visions_sort = (!req.query.visions_sort) ? '' : ' visions ' + req.query.visions_sort;
-    const events_sort = (!req.query.events_sort) ? '' : ' event ' + req.query.events_sort;
-    const status_sort = (!req.query.status_sort) ? '' : ' status ' + req.query.status_sort;
+    const events_sort = (!req.query.events_sort) ? '' : ' title ' + req.query.events_sort;
+    const status_sort = (!req.query.status_sort) ? '' : ' attendance ' + req.query.status_sort;
     //condition ordering
     const condition_order = (!req.query.condition_order) ? null : JSON.parse(req.query.condition_order);
 
@@ -80,7 +80,7 @@ exports.readVUAttendance = async (req, res) => {
 
     // create where string from search and filter conditions
     const whereList = [name_search, email_search, status_filter, visions_filter, events_filter];
-    const prefixList = ['name = ', 'email = ', 'status = ', 'visions = ', 'event = '];
+    const prefixList = ['name = ', 'email = ', 'attendance = ', 'visions = ', 'title = '];
 
     for (var i = 0; i < whereList.length; ++i){
         const whereData = whereList[i];
@@ -94,6 +94,7 @@ exports.readVUAttendance = async (req, res) => {
     //form the query
     const query = `SELECT name, email, visions, title AS event, attendance AS status FROM vu_attendance ` 
     + where + orderBy + ' LIMIT ' + row_num + ' OFFSET ' + row_start;
+    console.log(query)
     const viewusers = new Promise((resolve, reject) => {
         connection.query(query,(err, res) => {
           if (err) reject(err);
@@ -282,13 +283,11 @@ exports.exportVUAttendance =  async (req, res) => {
         //convert JSON to CSV Data
         var fileHeader = ['Name', 'Email', 'Visions', 'Event', 'Status'];
         var jsonData = new dataExporter({fileHeader});
-        console.log(currentRead);
         var csvData = jsonData.parse(currentRead);
         
         res.setHeader("Content-Type", "text/csv");
         res.setHeader("Content-Disposition", "attachment; filename=vuceptor_attendance_data.csv");
         res.send({status: STATUS_CODE.SUCCESS, data: csvData});
-        // res.send({status: STATUS_CODE.SUCCESS});
     } else {
         res.send({status: STATUS_CODE.EMPTY_DATA});
     }
