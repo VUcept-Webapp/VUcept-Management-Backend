@@ -122,7 +122,7 @@ exports.readVUAttendance = async (req, res) => {
 }
 
 //check if there will be repeated attendance record
-const checkExistingVUAttendance= async (eventID, userID) => {
+const checkExistingVUAttendance= async (userID, eventID) => {
     const query = 'SELECT COUNT(*) AS count FROM vuceptor_attendance WHERE vuceptor_id = ? AND event_id = ?';
     const performCheckExistingRecord= new Promise((resolve, reject) => {
         connection.query(query, [userID, eventID], (err, res) => {
@@ -203,7 +203,7 @@ exports.insertVUAttendance =  async (req, res) => {
     //insert vuceptor attendance record
     const query = 'INSERT INTO vuceptor_attendance (vuceptor_id, event_id, attendance) VALUES (?,?,?)';
     const addVUAttendance = new Promise((resolve, reject) => {
-      connection.query(query, [VUId, eventID, attendance], (err, res) => {
+      connection.query(query, [findVUID.id,findEventID.id, attendance], (err, res) => {
         if (err) reject(err);
         else resolve(res);
       })
@@ -229,7 +229,6 @@ exports.editVUAttendance =  async (req, res) => {
     //check validity of record
     const checkExistingResult = await checkExistingVUAttendance(findVUID.id, findEventID.id);
     if (checkExistingResult.status !== STATUS_CODE.REPEATED_RECORDS) return res.send(checkExistingResult);
-
     //update vuceptor attendance record
     const query = `UPDATE vuceptor_attendance SET attendance = ? WHERE vuceptor_id = ? AND event_id = ?;`;
     const editVUAttendance = new Promise((resolve, reject) => {
@@ -284,9 +283,6 @@ exports.exportVUAttendance =  async (req, res) => {
         var fileHeader = ['Name', 'Email', 'Visions', 'Event', 'Status'];
         var jsonData = new dataExporter({fileHeader});
         var csvData = jsonData.parse(currentRead);
-        
-        res.setHeader("Content-Type", "text/csv");
-        res.setHeader("Content-Disposition", "attachment; filename=vuceptor_attendance_data.csv");
         res.send({status: STATUS_CODE.SUCCESS, data: csvData});
     } else {
         res.send({status: STATUS_CODE.EMPTY_DATA});
