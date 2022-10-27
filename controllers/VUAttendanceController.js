@@ -94,7 +94,6 @@ exports.readVUAttendance = async (req, res) => {
     //form the query
     const query = `SELECT name, email, visions, title AS event, attendance AS status FROM vu_attendance ` 
     + where + orderBy + ' LIMIT ' + row_num + ' OFFSET ' + row_start;
-    console.log(query)
     const viewusers = new Promise((resolve, reject) => {
         connection.query(query,(err, res) => {
           if (err) reject(err);
