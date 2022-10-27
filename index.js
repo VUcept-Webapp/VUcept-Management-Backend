@@ -23,6 +23,8 @@ const VUAttendanceRoute = require('./routes/VUAttendance');
 app.use('/', VUAttendanceRoute);
 const fyRoute = require('./routes/fy');
 app.use('/', fyRoute);
+const fyAttendanceRoute = require('./routes/fyAttendance');
+app.use('/', fyAttendanceRoute);
 
 app.listen(port, () => console.log(`Listening on port ${port}`));
 
