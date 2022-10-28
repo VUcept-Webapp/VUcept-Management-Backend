@@ -1,12 +1,12 @@
 const {STATUS_CODE } = require('../lib/constants');
 const attendanceManager = require('../lib/attendanceHelpers');
-const actualTableName = `vuceptor_attendance`;
-const bigViewName = `vu_attendance`;
+const actualTableName = `student_attendance`;
+const bigViewName = `fy_attendance`;
 
 //global variable to cache current read data 
 var currentRead;
 
-exports.readVUAttendance = async (req, res) => {
+exports.readFyAttendance = async (req, res) => {
     try {
         const readAttendance = await attendanceManager.readAttendance(req.query, bigViewName);
         //cache most recent read
@@ -18,7 +18,7 @@ exports.readVUAttendance = async (req, res) => {
     }
 }
 
-exports.insertVUAttendance =  async (req, res) => {
+exports.insertFyAttendance =  async (req, res) => {
     try {
         const insertAttendance = await attendanceManager.insertAttendance(req.body, actualTableName);
         return res.send(insertAttendance);
@@ -28,7 +28,7 @@ exports.insertVUAttendance =  async (req, res) => {
     }
 }
 
-exports.editVUAttendance =  async (req, res) => {
+exports.editFyAttendance =  async (req, res) => {
     try {
         const editAttendance = await attendanceManager.editAttendance(req.body, actualTableName);
         return res.send(editAttendance);
@@ -38,7 +38,7 @@ exports.editVUAttendance =  async (req, res) => {
     }
 }
 
-exports.deleteVUAttendance =  async (req, res) => {
+exports.deleteFyAttendance =  async (req, res) => {
     try {
         const deleteAttendance = await attendanceManager.deleteAttendance(req.body, actualTableName);
         return res.send(deleteAttendance);
@@ -48,7 +48,7 @@ exports.deleteVUAttendance =  async (req, res) => {
     }
 }
 
-exports.exportVUAttendance =  async (req, res) => {
+exports.exportFyAttendance =  async (req, res) => {
     try {
         const data = await attendanceManager.exportAttendance(currentRead);
         return res.send(data);
@@ -58,7 +58,7 @@ exports.exportVUAttendance =  async (req, res) => {
     }
 }
 
-exports.getVUAttendanceVisionsList =  async (req, res) => {
+exports.getFyAttendanceVisionsList =  async (req, res) => {
     try {
         const data = await attendanceManager.getVisionsList(bigViewName);
         return res.send(data);
@@ -68,7 +68,7 @@ exports.getVUAttendanceVisionsList =  async (req, res) => {
     }
 }
 
-exports.getVUAttendanceEventsList =  async (req, res) => {
+exports.getFyAttendanceEventsList =  async (req, res) => {
     try {
         const data = await attendanceManager.getEventsList(bigViewName);
         return res.send(data);
