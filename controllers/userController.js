@@ -1,5 +1,6 @@
 const { STATUS_CODE, SORT_ORDER } = require('../lib/constants');
 const connection = require('../models/connection');
+const {concateCommand} = require('../lib/helpers');
 
 // Shared functions: insertUser
 exports.insertUser = ({ email, name, type, visions }) => {
@@ -167,12 +168,12 @@ exports.readUser = async (req, res) => {
   const condition_order = (!req.query.condition_order) ? null : JSON.parse(req.query.condition_order);
   
   // pass in array for all search/filtering options
-  const name_search = (!req.query.name_search) ? '' : JSON.parse(req.query.name_search);
-  const email_search = (!req.query.email_search) ? '' : JSON.parse(req.query.email_search);
-  const visions_filter = (!req.query.visions_filter) ? '' : JSON.parse(req.query.visions_filter);
-  const status_filter = (!req.query.status_filter) ? '' : JSON.parse(req.query.status_filter);
-  const type_filter = (!req.query.type_filter) ? '' : JSON.parse(req.query.type_filter);
-  
+  const name_search = (!req.query.name_search) ? '' : {type: 'string', data : JSON.parse(req.query.name_search)};
+  const email_search = (!req.query.email_search) ? '' : {type: 'string', data : JSON.parse(req.query.email_search)};
+  const visions_filter = (!req.query.visions_filter) ? '' : {type: 'int', data : JSON.parse(req.query.visions_filter)};
+  const status_filter = (!req.query.status_filter) ? '' : {type: 'string', data : JSON.parse(req.query.status_filter)};
+  const type_filter = (!req.query.type_filter) ? '' : {type: 'string', data : JSON.parse(req.query.type_filter)};
+
   const row_start = (!req.query.row_start) ? 0 : req.query.row_start;
   const row_num = (!req.query.row_num) ? 50 : req.query.row_num;
 
@@ -186,98 +187,43 @@ exports.readUser = async (req, res) => {
   }
 
   // create where string
-  var where = '';
+  var tempWhere =  ' WHERE ';
   const where_list = [name_search, email_search, status_filter, type_filter, visions_filter];
   const prefix_list = ['name = ', 'email = ', 'status = ', 'type = ', 'visions = '];
-  for (let m = 0; m < where_list.length; m++){
-    cond = where_list[m];
-    prefix = prefix_list[m];
-
-    if(cond !== ''){
-      let tmp = '';
-
-      if (where !== ''){
-        // initialize
-        if (m == (where_list.length - 1)){ // visions_filter
-          tmp = prefix + cond[0];
-        } else{
-          tmp = prefix + '\'' + cond[0] + '\'';
-        }
-
-        if (m == (where_list.length - 1)){ // visions_filter
-          for(let k = 1; k < cond.length; k++){
-            tmp = tmp + ' OR ' + prefix + cond[k];
-          }
-        } else {
-          for(let k = 1; k < cond.length; k++){
-            tmp = tmp + ' OR ' + prefix + '\'' + cond[k] + '\'';
-          }
-        }
-
-        where = where + ' AND (' + tmp + ')';
-      } else {
-        let tmp = '';
-        // initialize
-        if (m == (where_list.length - 1)){ // visions_filter
-          tmp = prefix + cond[0];
-        } else{
-          tmp = prefix + '\'' + cond[0] + '\'';
-        }
-
-        if (m == (where_list.length - 1)){ // visions_filter
-          for(let k = 1; k < cond.length; k++){
-            tmp = tmp + ' OR ' + prefix + cond[k];
-          }
-        } else{
-          for(let k = 1; k < cond.length; k++){
-            tmp = tmp + ' OR ' + prefix + '\'' + cond[k] + '\'';
-          }
-        }
-
-        where = ' WHERE (' + tmp + ')';
-      }
+  for (let i = 0; i < where_list.length; i++){
+    const where_data = where_list[i];
+    if (where_data !== ''){
+      tempWhere += concateCommand(where_data.type, prefix_list[i], where_data.data) + ' AND ';
     }
   }
 
+  //form the const where clause and get rid of "AND" in the end
+  const where = tempWhere.startsWith(' AND ', tempWhere.length - 5) ? tempWhere.substring(0, tempWhere.length - 4) : tempWhere;
+
+  // create orderBy string
   // ORDER BY A, B will first order database by A, if A is the same then order by B
-  // if condition_order is not passed in, it will order with priorty of name -> email -> visions
   // if condition_order is given, it will only contain sorting conditions within condition_order 
-  var orderby = '';
-  var orderby_list = []
-  if (condition_order == null){
-    orderby_list = [name_sort, email_sort, visions_sort];
-  } else {
-    for(let i = 0; i < condition_order.length; i++){
-      var cond = condition_order[i];
-  
-      switch (cond) {
-        case "name_sort":
-          orderby_list.push(name_sort);
-          break;
-        case "email_sort":
-          orderby_list.push(email_sort);
-          break;
-        case "visions_sort":
-          orderby_list.push(visions_sort);
+  var tempOrderBy = 'ORDER BY';
+  if (condition_order){
+      for (const condition of condition_order){
+          switch (condition) {
+              case "name_sort":
+                tempOrderBy += name_sort + ',';
+                break;
+              case "email_sort":
+                tempOrderBy += email_sort + ',';
+                break;
+              case "visions_sort":
+                tempOrderBy += visions_sort + ',';
+                break;
+          }
       }
-    }
   }
 
-  // create ORDER BY string
-  orderby_list.forEach(order => {
-    if(order !== ''){
-      if (orderby !== ''){
-        orderby = orderby + ' ,' + order;
-      } else {
-        orderby = ' ORDER BY' + order;
-      }
-    }
-  })
+  const orderBy = (tempOrderBy === 'ORDER BY') ? '' : tempOrderBy.substring(0, tempOrderBy.length - 1);
 
-
-  const query = 'SELECT name, email, visions, type, status FROM users' +  where + orderby +
+  const query = 'SELECT name, email, visions, type, status FROM users' +  where + orderBy +
   ' LIMIT ' + row_num + ' OFFSET ' + row_start;
-
   const viewusers = new Promise((resolve, reject) => {
     connection.query(query, (err, res) => {
       if (err) reject(err);
@@ -286,14 +232,13 @@ exports.readUser = async (req, res) => {
   });
 
   //calculate the number of pages
-  const queryCount = "SELECT COUNT(*) AS count FROM users" +  where + orderby;
+  const queryCount = "SELECT COUNT(*) AS count FROM users" +  where;
   var pages = 0;
-  await connection.promise().query(queryCount)
-  .then(data => {
-    pages = Math.ceil(data[0][0].count/row_num);
-  })
-  .catch(error => {
-    console.log(error);
+  const pages = new Promise((resolve, reject) => {
+    connection.query(queryCount,(err, res) => {
+      if (err) reject(err);
+      else resolve(Math.ceil(res[0].count/row_num));
+    })
   });
 
   try {
