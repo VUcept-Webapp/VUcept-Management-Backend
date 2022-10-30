@@ -1,6 +1,6 @@
-const { STATUS_CODE } = require('../../../lib/constants');
+const { STATUS_CODE } = require('../lib/constants');
 const request = require('supertest');
-const app = require("../../../index.js");
+const app = require("../index.js");
 
 describe('Routes for User Management Screen', () => {
 

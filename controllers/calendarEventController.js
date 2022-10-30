@@ -1,5 +1,7 @@
-const connection = require('../models/connection');
+const { dbConfig, connect, disconnect } = require('../models/connection');
 const {STATUS_CODE } = require('../lib/constants');
+
+const connection = dbConfig(); // need to implement disconnect
 
 exports.insertCalendarEvent =  async (req, res) => {
     const {title, loggedBy, date, startTime, description, location, endTime} = req.body;

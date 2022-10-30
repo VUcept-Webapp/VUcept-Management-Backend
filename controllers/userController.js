@@ -1,58 +1,102 @@
 const { STATUS_CODE, SORT_ORDER } = require('../lib/constants');
-const connection = require('../models/connection');
-const {concateCommand} = require('../lib/helpers');
+const { dbConfig, connect, disconnect } = require('../models/connection');
+
+//used for creating conditions in where clause 
+const concateCommand = (type, prefix, conditions) =>{
+  var cmd = '';
+  if (type === 'string') {
+      for (const condition of conditions){
+          cmd +=  prefix + '\'' + condition  + '\'' + ' OR ';
+     }
+  } else if (type === 'int'){
+      for (const condition of conditions){
+         cmd += prefix + condition  + ' OR ';
+     }
+  }
+  return '(' + cmd.substring(0, cmd.length - 3) + ')';
+}
 
 // Shared functions: insertUser
 exports.insertUser = ({ email, name, type, visions }) => {
+  connection = dbConfig();
+  connect(connection);
+
   const query = 'INSERT INTO users (email, name, type, status, visions) VALUES (?,?,?,\'unregistered\',?)';
 
-  return new Promise((resolve, reject) => {
+  const promise = new Promise((resolve, reject) => {
     connection.query(query, [email, name, type, visions], (err, res) => {
       if (err) reject(err);
       else resolve(res);
     })
-  })
+  });
+
+  disconnect(connection);
+
+  return promise;
 };
 
 // Shared function: verifyUser
 exports.verifyUser = ( email ) => {
+  connection = dbConfig();
+  connect(connection);
+
   const queryCheck = 'SELECT COUNT(email) AS NUM FROM users WHERE email = ?';
 
-  return new Promise ((resolve, reject) => {
+  const promise = new Promise ((resolve, reject) => {
     connection.query(queryCheck, email, (err, res) => {
       if (err) reject(err);
       else resolve(res[0]);
     })
   });
+
+  disconnect(connection);
+
+  return promise;
 };
 
 // Shared function: removeUser
 exports.removeUser = ( email ) => {
+  connection = dbConfig();
+  connect(connection);
+
   const query = `DELETE FROM users WHERE email = ?`;
 
-  return new Promise((resolve, reject) => {
+  const promise = new Promise((resolve, reject) => {
     connection.query(query, email, (err, res) => {
       if (err) reject(err);
       else resolve(res);
     })
   });
+
+  disconnect(connection);
+
+  return promise;
 };
 
 // Shared function: editUser
 exports.editUser = ({ old_email, email, name, type, visions }) => {
-  const query = `UPDATE users SET email = ?, name = ?, type = ?, visions = ? WHERE email = ?;`;
-  // console.log({ email, name, type, visions, old_email,  });
+  connection = dbConfig();
+  connect(connection);
 
-  return new Promise((resolve, reject) => {
+  const query = `UPDATE users SET email = ?, name = ?, type = ?, visions = ? WHERE email = ?;`;
+
+  const promise = new Promise((resolve, reject) => {
     connection.query(query, [email, name, type, visions, old_email], (err, res) => {
       if (err) reject(err);
       else resolve(res);
     })
-  })
+  });
+
+  disconnect(connection);
+
+  return promise;
 };
 
 //reset the user table
 exports.resetUsers = async (req, res) => {
+  connection = dbConfig();
+  connect(connection);
+
   const query = 'DELETE FROM users;';
 
   const reset = new Promise((resolve, reject) => {
@@ -64,11 +108,11 @@ exports.resetUsers = async (req, res) => {
 
   try {
     await reset;
+    disconnect(connection);
+    return res.send({ status: STATUS_CODE.SUCCESS });
   } catch (error){
     return res.send({ status: STATUS_CODE.ERROR, result: error });
   }
-
-  return res.send({ status: STATUS_CODE.SUCCESS });
 };
 
 //load with csv file
@@ -162,6 +206,9 @@ exports.deleteUser = async (req, res) => {
 
 //get all first year students, return a json object
 exports.readUser = async (req, res) => {
+  connection = dbConfig();
+  connect(connection);
+
   const name_sort = (!req.query.name_sort) ? '' : ' name ' + req.query.name_sort;
   const email_sort = (!req.query.email_sort) ? '' : ' email ' + req.query.email_sort;
   const visions_sort = (!req.query.visions_sort) ? '' : ' visions ' + req.query.visions_sort;
@@ -197,13 +244,15 @@ exports.readUser = async (req, res) => {
     }
   }
 
-  //form the const where clause and get rid of "AND" in the end
-  const where = tempWhere.startsWith(' AND ', tempWhere.length - 5) ? tempWhere.substring(0, tempWhere.length - 4) : tempWhere;
-
+  var where = '';
+  if (tempWhere !== ' WHERE '){
+    where = tempWhere.startsWith(' AND ', tempWhere.length - 5) ? tempWhere.substring(0, tempWhere.length - 4) : tempWhere;
+  }
+  
   // create orderBy string
   // ORDER BY A, B will first order database by A, if A is the same then order by B
   // if condition_order is given, it will only contain sorting conditions within condition_order 
-  var tempOrderBy = 'ORDER BY';
+  var tempOrderBy = ' ORDER BY ';
   if (condition_order){
       for (const condition of condition_order){
           switch (condition) {
@@ -220,7 +269,7 @@ exports.readUser = async (req, res) => {
       }
   }
 
-  const orderBy = (tempOrderBy === 'ORDER BY') ? '' : tempOrderBy.substring(0, tempOrderBy.length - 1);
+  const orderBy = (tempOrderBy === ' ORDER BY ') ? '' : tempOrderBy.substring(0, tempOrderBy.length - 1);
 
   const query = 'SELECT name, email, visions, type, status FROM users' +  where + orderBy +
   ' LIMIT ' + row_num + ' OFFSET ' + row_start;
@@ -233,16 +282,18 @@ exports.readUser = async (req, res) => {
 
   //calculate the number of pages
   const queryCount = "SELECT COUNT(*) AS count FROM users" +  where;
-  var pages = 0;
-  const pages = new Promise((resolve, reject) => {
-    connection.query(queryCount,(err, res) => {
+  const pageCount = new Promise((resolve, reject) => {
+    connection.query(queryCount, (err, res) => {
       if (err) reject(err);
       else resolve(Math.ceil(res[0].count/row_num));
     })
   });
 
+  disconnect(connection);
+
   try {
     var rows = await viewusers;
+    var pages = await pageCount;
     return res.send({ status: STATUS_CODE.SUCCESS, result: {rows, pages}});
   } catch (error) {
     return res.send({ status: STATUS_CODE.ERROR, result: error });
@@ -252,6 +303,9 @@ exports.readUser = async (req, res) => {
 // return empty list when no value is found in DB
 // return the max Visions group number
 exports.visionsNums = async (req, res) => {
+  connection = dbConfig();
+  connect(connection);
+
   const query = 'SELECT DISTINCT visions FROM users ORDER BY visions ASC';
 
   const returnMaxVisions = new Promise((resolve, reject) => {
@@ -263,6 +317,7 @@ exports.visionsNums = async (req, res) => {
 
   try {
     let maxVisions = await returnMaxVisions;
+    disconnect(connection);
     return res.send({ status: STATUS_CODE.SUCCESS, result: { list: maxVisions }});
   } catch (error){
     return res.send({ status: STATUS_CODE.ERROR, result: error });

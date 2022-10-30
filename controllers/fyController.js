@@ -1,8 +1,7 @@
 const { STATUS_CODE, SORT_ORDER } = require('../lib/constants');
-const connection = require('../models/connection');
+const { dbConfig, connect, disconnect } = require('../models/connection');
 
-// FIXME: how are user_id and student_id generated
-
+const connection = dbConfig(); // need to implement disconnect
 
 // Shared functions: insertFy
 exports.insertFy = ({ email, name, visions }) => {
