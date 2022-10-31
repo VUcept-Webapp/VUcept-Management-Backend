@@ -1,4 +1,4 @@
-const { STATUS_CODE } = require('../lib/constants');
+const { STATUS_CODE, ascReturnResult, descReturnResult, emptyReturnResult } = require('../lib/constants');
 const request = require('supertest');
 const app = require("../index.js");
 
@@ -57,76 +57,6 @@ describe('Routes for User Management Screen', () => {
     const res = await request(app).post('/createUser').send(body);
     expect(res.body.status).toEqual(STATUS_CODE.EMAIL_USED);
   });
-
-  const ascReturnResult = {
-    "rows": [
-        {
-            "name": "test001",
-            "email": "test001@vanderbilt.edu",
-            "visions": 1,
-            "type": "vuceptor",
-            "status": "unregistered"
-        },
-        {
-            "name": "test002",
-            "email": "test002@vanderbilt.edu",
-            "visions": 2,
-            "type": "vuceptor",
-            "status": "unregistered"
-        },
-        {
-            "name": "test003",
-            "email": "test003@vanderbilt.edu",
-            "visions": 3,
-            "type": "vuceptor",
-            "status": "unregistered"
-        },
-        {
-            "name": "test005",
-            "email": "test005@vanderbilt.edu",
-            "visions": 5,
-            "type": "vuceptor",
-            "status": "unregistered"
-        }
-    ],
-    "pages": 1
-  };
-
-  const descReturnResult = {
-    "rows": [
-        {
-            "name": "test005",
-            "email": "test005@vanderbilt.edu",
-            "visions": 5,
-            "type": "vuceptor",
-            "status": "unregistered"
-        },
-        {
-            "name": "test003",
-            "email": "test003@vanderbilt.edu",
-            "visions": 3,
-            "type": "vuceptor",
-            "status": "unregistered"
-        },
-        {
-            "name": "test002",
-            "email": "test002@vanderbilt.edu",
-            "visions": 2,
-            "type": "vuceptor",
-            "status": "unregistered"
-        },
-        {
-            "name": "test001",
-            "email": "test001@vanderbilt.edu",
-            "visions": 1,
-            "type": "vuceptor",
-            "status": "unregistered"
-        }
-    ],
-    "pages": 1
-  };
-
-  const emptyReturnResult = {"rows": [], "pages": 0};
 
   // routerUser.get('/readUser', userController.readUser);
   test('responds to /readUser', async () => {
@@ -315,4 +245,3 @@ describe('Routes for User Management Screen', () => {
     expect(res.body.result).toEqual(emptyReturnResult);
   });
 });
-
