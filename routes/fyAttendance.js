@@ -10,5 +10,6 @@ routerFyAttendance.get('/exportFyAttendance', FyAttendanceController.exportFyAtt
 routerFyAttendance.post('/insertFyAttendance', FyAttendanceController.insertFyAttendance);
 routerFyAttendance.post('/editFyAttendance', FyAttendanceController.editFyAttendance);
 routerFyAttendance.post('/deleteFyAttendance', FyAttendanceController.deleteFyAttendance);
+routerFyAttendance.post('/sendWeeklyReport', FyAttendanceController.sendWeeklyReport);
 
 module.exports = routerFyAttendance;
