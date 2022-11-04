@@ -1,5 +1,5 @@
 const {STATUS_CODE, SORT_ORDER} = require('../lib/constants');
-const {dbConfig, connect, disconnect} = require('../models/connection');
+const connection = require('../models/connection');
 
 //used for creating conditions in where clause 
 const concateCommand = (type, prefix, conditions) => {
@@ -17,199 +17,196 @@ const concateCommand = (type, prefix, conditions) => {
 }
 
 // Shared functions: insertUser
-exports.insertUser = ({email, name, type, visions}) => {
-    connection = dbConfig();
-    connect(connection);
+// exports.insertUser = ({email, name, type, visions}) => {
+//     connection = dbConfig();
+//     connect(connection);
 
-    const query = 'INSERT INTO users (email, name, type, status, visions) VALUES (?,?,?,\'unregistered\',?)';
+//     const query = 'INSERT INTO users (email, name, type, status, visions) VALUES (?,?,?,\'unregistered\',?)';
 
-    const promise = new Promise((resolve, reject) => {
-        connection.query(query, [email, name, type, visions], (err, res) => {
-            if (err) reject(err);
-            else resolve(res);
-        })
-    });
+//     const promise = new Promise((resolve, reject) => {
+//         connection.query(query, [email, name, type, visions], (err, res) => {
+//             if (err) reject(err);
+//             else resolve(res);
+//         })
+//     });
 
-    disconnect(connection);
+//     disconnect(connection);
 
-    return promise;
-};
+//     return promise;
+// };
 
-// Shared function: verifyUser
-exports.verifyUser = (email) => {
-    connection = dbConfig();
-    connect(connection);
+// // Shared function: verifyUser
+// exports.verifyUser = (email) => {
+//     connection = dbConfig();
+//     connect(connection);
 
-    const queryCheck = 'SELECT COUNT(email) AS NUM FROM users WHERE email = ?';
+//     const queryCheck = 'SELECT COUNT(email) AS NUM FROM users WHERE email = ?';
 
-    const promise = new Promise((resolve, reject) => {
-        connection.query(queryCheck, email, (err, res) => {
-            if (err) reject(err);
-            else resolve(res[0]);
-        })
-    });
+//     const promise = new Promise((resolve, reject) => {
+//         connection.query(queryCheck, email, (err, res) => {
+//             if (err) reject(err);
+//             else resolve(res[0]);
+//         })
+//     });
 
-    disconnect(connection);
+//     disconnect(connection);
 
-    return promise;
-};
+//     return promise;
+// };
 
-// Shared function: removeUser
-exports.removeUser = (email) => {
-    connection = dbConfig();
-    connect(connection);
+// // Shared function: removeUser
+// exports.removeUser = (email) => {
+//     connection = dbConfig();
+//     connect(connection);
 
-    const query = `DELETE FROM users WHERE email = ?`;
+//     const query = `DELETE FROM users WHERE email = ?`;
 
-    const promise = new Promise((resolve, reject) => {
-        connection.query(query, email, (err, res) => {
-            if (err) reject(err);
-            else resolve(res);
-        })
-    });
+//     const promise = new Promise((resolve, reject) => {
+//         connection.query(query, email, (err, res) => {
+//             if (err) reject(err);
+//             else resolve(res);
+//         })
+//     });
 
-    disconnect(connection);
+//     disconnect(connection);
 
-    return promise;
-};
+//     return promise;
+// };
 
-// Shared function: editUser
-exports.editUser = ({old_email, email, name, type, visions}) => {
-    connection = dbConfig();
-    connect(connection);
+// // Shared function: editUser
+// exports.editUser = ({old_email, email, name, type, visions}) => {
+//     connection = dbConfig();
+//     connect(connection);
 
-    const query = `UPDATE users SET email = ?, name = ?, type = ?, visions = ? WHERE email = ?;`;
+//     const query = `UPDATE users SET email = ?, name = ?, type = ?, visions = ? WHERE email = ?;`;
 
-    const promise = new Promise((resolve, reject) => {
-        connection.query(query, [email, name, type, visions, old_email], (err, res) => {
-            if (err) reject(err);
-            else resolve(res);
-        })
-    });
+//     const promise = new Promise((resolve, reject) => {
+//         connection.query(query, [email, name, type, visions, old_email], (err, res) => {
+//             if (err) reject(err);
+//             else resolve(res);
+//         })
+//     });
 
-    disconnect(connection);
+//     disconnect(connection);
 
-    return promise;
-};
+//     return promise;
+// };
 
-//reset the user table
-exports.resetUsers = async (req, res) => {
-    connection = dbConfig();
-    connect(connection);
+// //reset the user table
+// exports.resetUsers = async (req, res) => {
+//     connection = dbConfig();
+//     connect(connection);
 
-    const query = 'DELETE FROM users;';
+//     const query = 'DELETE FROM users;';
 
-    const reset = new Promise((resolve, reject) => {
-        connection.query(query, (err, res) => {
-            if (err) reject(err);
-            else resolve(res);
-        })
-    });
+//     const reset = new Promise((resolve, reject) => {
+//         connection.query(query, (err, res) => {
+//             if (err) reject(err);
+//             else resolve(res);
+//         })
+//     });
 
-    try {
-        await reset;
-        disconnect(connection);
-        return res.send({status: STATUS_CODE.SUCCESS});
-    } catch (error) {
-        return res.send({status: STATUS_CODE.ERROR, result: error});
-    }
-};
+//     try {
+//         await reset;
+//         disconnect(connection);
+//         return res.send({status: STATUS_CODE.SUCCESS});
+//     } catch (error) {
+//         return res.send({status: STATUS_CODE.ERROR, result: error});
+//     }
+// };
 
-//load with csv file
-exports.userLoadfromcsv = async (req, res) => {
-    const {file} = req.body;
-    var duplicates = [];
+// //load with csv file
+// exports.userLoadfromcsv = async (req, res) => {
+//     const {file} = req.body;
+//     var duplicates = [];
 
-    // Fetching the data from each row
-    // and inserting to the table "sample"
-    for (var i = 0; i < file.length; i++) {
-        var email = file[i]["email"],
-            name = file[i]["name"],
-            type = file[i]["type"],
-            visions = file[i]["visions"];
+//     // Fetching the data from each row
+//     // and inserting to the table "sample"
+//     for (var i = 0; i < file.length; i++) {
+//         var email = file[i]["email"],
+//             name = file[i]["name"],
+//             type = file[i]["type"],
+//             visions = file[i]["visions"];
 
-        try {
-            let verify = await this.verifyUser(email);
-            if (verify.NUM > 0) {
-                duplicates.push(email);
-            } else {
-                await this.insertUser({email, name, type, visions});
-            }
-        } catch (error) {
-            return res.send({status: STATUS_CODE.ERROR, result: error});
-        }
-    }
+//         try {
+//             let verify = await this.verifyUser(email);
+//             if (verify.NUM > 0) {
+//                 duplicates.push(email);
+//             } else {
+//                 await this.insertUser({email, name, type, visions});
+//             }
+//         } catch (error) {
+//             return res.send({status: STATUS_CODE.ERROR, result: error});
+//         }
+//     }
 
-    if (duplicates.length == 0) {
-        return res.send({status: STATUS_CODE.SUCCESS});
-    } else {
-        return res.send({status: STATUS_CODE.EMAIL_USED, result: duplicates});
-    }
-};
+//     if (duplicates.length == 0) {
+//         return res.send({status: STATUS_CODE.SUCCESS});
+//     } else {
+//         return res.send({status: STATUS_CODE.EMAIL_USED, result: duplicates});
+//     }
+// };
 
-//add one user
-exports.createUser = async (req, res) => {
-    const {email, name, type, visions} = req.body;
+// //add one user
+// exports.createUser = async (req, res) => {
+//     const {email, name, type, visions} = req.body;
 
-    try {
-        let verify = await this.verifyUser(email);
-        if (verify.NUM > 0) {
-            return res.send({status: STATUS_CODE.EMAIL_USED, result: email});
-        }
+//     try {
+//         let verify = await this.verifyUser(email);
+//         if (verify.NUM > 0) {
+//             return res.send({status: STATUS_CODE.EMAIL_USED, result: email});
+//         }
 
-        let result = await this.insertUser({email, name, type, visions});
+//         let result = await this.insertUser({email, name, type, visions});
 
-        if (result.affectedRows) {
-            return res.send({status: STATUS_CODE.SUCCESS});
-        }
-    } catch (error) {
-        return res.send({status: STATUS_CODE.ERROR, result: error});
-    }
+//         if (result.affectedRows) {
+//             return res.send({status: STATUS_CODE.SUCCESS});
+//         }
+//     } catch (error) {
+//         return res.send({status: STATUS_CODE.ERROR, result: error});
+//     }
 
-    return res.send({status: STATUS_CODE.ERROR});
-};
+//     return res.send({status: STATUS_CODE.ERROR});
+// };
 
-//edit one user
-exports.updateUser = async (req, res) => {
-    const {old_email, email, name, type, visions} = req.body;
+// //edit one user
+// exports.updateUser = async (req, res) => {
+//     const {old_email, email, name, type, visions} = req.body;
 
-    try {
-        let result = await this.editUser({old_email, email, name, type, visions});
-        return res.send({status: STATUS_CODE.SUCCESS});
-    } catch (error) {
-        return res.send({status: STATUS_CODE.ERROR, result: error});
-    }
+//     try {
+//         let result = await this.editUser({old_email, email, name, type, visions});
+//         return res.send({status: STATUS_CODE.SUCCESS});
+//     } catch (error) {
+//         return res.send({status: STATUS_CODE.ERROR, result: error});
+//     }
 
-};
+// };
 
-//delete one user
-exports.deleteUser = async (req, res) => {
-    try {
-        const email = req.body.email;
-        let verify = await this.verifyUser(email);
+// //delete one user
+// exports.deleteUser = async (req, res) => {
+//     try {
+//         const email = req.body.email;
+//         let verify = await this.verifyUser(email);
 
-        if (verify.NUM == 0) {
-            return res.send({
-                status: STATUS_CODE.INCORRECT_USER_EMAIL,
-                result: email
-            });
-        }
+//         if (verify.NUM == 0) {
+//             return res.send({
+//                 status: STATUS_CODE.INCORRECT_USER_EMAIL,
+//                 result: email
+//             });
+//         }
 
-        let result = await this.removeUser(email);
-        if (result.affectedRows) {
-            return res.send({status: STATUS_CODE.SUCCESS});
-        }
-    } catch (error) {
-        return res.send({status: STATUS_CODE.ERROR, result: error});
-    }
-    return res.send({status: STATUS_CODE.SUCCESS});
-};
+//         let result = await this.removeUser(email);
+//         if (result.affectedRows) {
+//             return res.send({status: STATUS_CODE.SUCCESS});
+//         }
+//     } catch (error) {
+//         return res.send({status: STATUS_CODE.ERROR, result: error});
+//     }
+//     return res.send({status: STATUS_CODE.SUCCESS});
+// };
 
 //get all first year students, return a json object
 exports.readUser = async (req, res) => {
-    connection = dbConfig();
-    connect(connection);
-
     const name_sort = (!req.query.name_sort) ? '' : ' name ' + req.query.name_sort;
     const email_sort = (!req.query.email_sort) ? '' : ' email ' + req.query.email_sort;
     const visions_sort = (!req.query.visions_sort) ? '' : ' visions ' + req.query.visions_sort;
@@ -289,8 +286,6 @@ exports.readUser = async (req, res) => {
         })
     });
 
-    disconnect(connection);
-
     try {
         var rows = await viewusers;
         var pages = await pageCount;
@@ -302,27 +297,27 @@ exports.readUser = async (req, res) => {
 
 // return empty list when no value is found in DB
 // return the max Visions group number
-exports.visionsNums = async (req, res) => {
-    connection = dbConfig();
-    connect(connection);
+// exports.visionsNums = async (req, res) => {
+//     connection = dbConfig();
+//     connect(connection);
 
-    const query = 'SELECT DISTINCT visions FROM users ORDER BY visions ASC';
+//     const query = 'SELECT DISTINCT visions FROM users ORDER BY visions ASC';
 
-    const returnMaxVisions = new Promise((resolve, reject) => {
-        connection.query(query, (err, res) => {
-            if (err) reject(err);
-            else resolve(res);
-        })
-    });
+//     const returnMaxVisions = new Promise((resolve, reject) => {
+//         connection.query(query, (err, res) => {
+//             if (err) reject(err);
+//             else resolve(res);
+//         })
+//     });
 
-    try {
-        let maxVisions = await returnMaxVisions;
-        disconnect(connection);
-        return res.send({
-            status: STATUS_CODE.SUCCESS,
-            result: {list: maxVisions}
-        });
-    } catch (error) {
-        return res.send({status: STATUS_CODE.ERROR, result: error});
-    }
-};
+//     try {
+//         let maxVisions = await returnMaxVisions;
+//         disconnect(connection);
+//         return res.send({
+//             status: STATUS_CODE.SUCCESS,
+//             result: {list: maxVisions}
+//         });
+//     } catch (error) {
+//         return res.send({status: STATUS_CODE.ERROR, result: error});
+//     }
+// };
