@@ -1,9 +1,8 @@
 const connection = require('../models/connection');
-const attendanceManager = require('../lib/attendanceHelpers');
 const {STATUS_CODE,SORT_ORDER } = require('../lib/constants');
 
 exports.readLogAttendance = async (req, res) => {
-    // check req.queryeters: sort
+    // check req.query parameters: sort
     const sort_list = [req.query.name_sort, req.query.email_sort];
     for (const sort of sort_list){
         if (sort && (sort !== SORT_ORDER.ASC) && (sort !== SORT_ORDER.DESC)){
@@ -11,7 +10,6 @@ exports.readLogAttendance = async (req, res) => {
             return res.send({ status: STATUS_CODE.UNKNOWN_SORT});
         }
     }
-
     //sort conditions
     const name_sort = (!req.query.name_sort) ? '' : ' name ' + req.query.name_sort;
     const email_sort = (!req.query.email_sort) ? '' : ' email ' + req.query.email_sort;
@@ -35,31 +33,22 @@ exports.readLogAttendance = async (req, res) => {
     const orderBy = (tempOrderBy === 'ORDER BY') ? '' : tempOrderBy.substring(0, tempOrderBy.length - 1);
 
     // pass in array for all search/filtering options
-    const name_search = (!req.query.name_search) ? '' : {type: 'string', data : JSON.parse(req.query.name_search)};
-    const email_search = (!req.query.email_search) ? '' : {type: 'string', data : JSON.parse(req.query.email_search)};
-    const event = (!req.query.event) ? '' : {type: 'string', data : JSON.parse(req.query.event)};
+    const name_search = (!req.query.name_search) ? '' : ' name = \'' + JSON.parse(req.query.name_search) + `\' AND `;
+    const email_search = (!req.query.email_search) ? '' : ' email = \'' +  JSON.parse(req.query.email_search)  + `\' AND `;
+    const event = (!req.query.event) ? '' : ' title = \'' + JSON.parse(req.query.event) + `\' AND `;
+    const visions = ' visions = ' + req.query.visions + ' ';
     //number of rows to calculate pages
     const row_start = (!req.query.row_start) ? 0 : req.query.row_start;
     const row_num = (!req.query.row_num) ? 50 : req.query.row_num;
-
-    // create where string from search conditions
-    var tempWhere = `WHERE date = CURDATE() AND `;
-    const whereList = [name_search, email_search, event];
-    const prefixList = ['name = ', 'email = ', 'title = '];
-
-    for (var i = 0; i < whereList.length; ++i){
-        const whereData = whereList[i];
-        if (whereData !== ''){
-            tempWhere += attendanceManager.concateCommand(whereData.type, prefixList[i], whereData.data) + ' AND ';
-        }
-    }
+    
     //form the const where clause and get rid of "AND" in the end
-    const where = (tempWhere.startsWith("AND ", tempWhere.length - 4)) ? tempWhere.substring(0, tempWhere.length - 4) : tempWhere;
+    const where = ` WHERE date = CURDATE() AND ` + name_search + email_search + event + visions;
 
     //form the query
     const query = `SELECT name, email, attendance FROM fy_attendance `
     + where + orderBy + ' LIMIT ' + row_num + ' OFFSET ' + row_start;
     const viewusers = new Promise((resolve, reject) => {
+        console.log(query)
         connection.query(query,(err, res) => {
             if (err) reject(err);
             else resolve(res);
