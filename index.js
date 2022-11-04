@@ -25,6 +25,8 @@ const fyRoute = require('./routes/fy');
 app.use('/', fyRoute);
 const fyAttendanceRoute = require('./routes/fyAttendance');
 app.use('/', fyAttendanceRoute);
+const logAttendanceRoute = require('./routes/logAttendance');
+app.use('/', logAttendanceRoute);
 
 app.listen(port, () => console.log(`Listening on port ${port}`));
 
