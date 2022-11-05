@@ -1,5 +1,5 @@
 const connection = require('../models/connection');
-const {STATUS_CODE,SORT_ORDER } = require('../lib/constants');
+const {STATUS_CODE,SORT_ORDER} = require('../lib/constants');
 const attendanceManager = require('../lib/attendanceHelpers');
 
 exports.readLogAttendance = async (req, res) => {
@@ -86,4 +86,26 @@ exports.submit = async (req, res) =>{
         }
     }
     return res.send({ status: STATUS_CODE.SUCCESS});
+}
+
+exports.getLogVisionsEvents = async (req, res) =>{
+    const visions = req.body.visions;
+    const query = `SELECT DISTINCT title from student_events WHERE visions = ?`;
+    const getEvents = new Promise((resolve, reject) => {
+      connection.query(query, [visions], (err, res) => {
+        if (err) reject(err);
+        else resolve(res);
+      })
+    });
+    try {
+        const eventsResults = await getEvents;
+        var eventsArray = [];
+        for (const result of eventsResults){
+            eventsArray.push(result.title);
+        }
+        return res.send({status: STATUS_CODE.SUCCESS, data: eventsArray});
+    } catch (e){
+        console.log(e);
+        return res.send({status: STATUS_CODE.ERROR});
+    }
 }
