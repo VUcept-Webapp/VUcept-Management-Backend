@@ -17,14 +17,14 @@ app.use(bodyParser.json());
 // routes for the APIs
 const userRoute = require('./routes/user');
 app.use('/', userRoute);
-// const authRoute = require('./routes/auth');
-// app.use('/', authRoute);
-// const VUAttendanceRoute = require('./routes/VUAttendance');
-// app.use('/', VUAttendanceRoute);
-// const fyRoute = require('./routes/fy');
-// app.use('/', fyRoute);
-// const fyAttendanceRoute = require('./routes/fyAttendance');
-// app.use('/', fyAttendanceRoute);
+const authRoute = require('./routes/auth');
+app.use('/', authRoute);
+const VUAttendanceRoute = require('./routes/VUAttendance');
+app.use('/', VUAttendanceRoute);
+const fyRoute = require('./routes/fy');
+app.use('/', fyRoute);
+const fyAttendanceRoute = require('./routes/fyAttendance');
+app.use('/', fyAttendanceRoute);
 
 app.listen(port, () => console.log(`Listening on port ${port}`));
 
