@@ -1,5 +1,6 @@
 const connection = require('../models/connection');
 const {STATUS_CODE,SORT_ORDER } = require('../lib/constants');
+const attendanceManager = require('../lib/attendanceHelpers');
 
 exports.readLogAttendance = async (req, res) => {
     // check req.query parameters: sort
@@ -41,7 +42,7 @@ exports.readLogAttendance = async (req, res) => {
     const row_start = (!req.query.row_start) ? 0 : req.query.row_start;
     const row_num = (!req.query.row_num) ? 50 : req.query.row_num;
     
-    //form the const where clause and get rid of "AND" in the end
+    //form the const where clause where visions is required 
     const where = ` WHERE date = CURDATE() AND ` + name_search + email_search + event + visions;
 
     //form the query
@@ -71,4 +72,18 @@ exports.readLogAttendance = async (req, res) => {
     } catch (error) {
         return res.send({ status: STATUS_CODE.ERROR, result: error });
     }
+}
+
+exports.submit = async (req, res) =>{
+    const edits = req.body;
+    for (const edit of edits){
+        try {
+            const editResult = await attendanceManager.editAttendance(edit, `student_attendance`);
+            if (editResult.status !== STATUS_CODE.SUCCESS) return res.send(editResult);
+        } catch (e){
+            console.log(e);
+            return res.send({status: STATUS_CODE.ERROR});
+        }
+    }
+    return res.send({ status: STATUS_CODE.SUCCESS});
 }
