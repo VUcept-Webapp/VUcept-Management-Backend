@@ -89,7 +89,7 @@ exports.submit = async (req, res) =>{
 }
 
 exports.getLogVisionsEvents = async (req, res) =>{
-    const visions = req.body.visions;
+    const visions = req.query.visions;
     const query = `SELECT DISTINCT title from student_events WHERE visions = ?`;
     const getEvents = new Promise((resolve, reject) => {
       connection.query(query, [visions], (err, res) => {

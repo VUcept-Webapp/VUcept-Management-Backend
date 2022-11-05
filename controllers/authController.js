@@ -3,20 +3,25 @@ const connection = require('../models/connection');
 const { STATUS_CODE, REGISTRATION_STATUS, transport } = require('../lib/constants');
 
   exports.login = async (req, res) => {
-    const query = `SELECT * FROM users WHERE email = ?`;
     const {email, password} = req.query;
-    //check for user status 
+    //check for user 
     try {
       const checkResult = await checkUser(email.toLowerCase());
       if (checkResult.length === 0) {
         return res.send({status: STATUS_CODE.INCORRECT_USER_EMAIL});
       }
-      if (checkResult[0].status === REGISTRATION_STATUS.UNREGISTERED){
+      const userData = checkResult[0];
+      if (userData.status === REGISTRATION_STATUS.UNREGISTERED){
         return res.send({status : STATUS_CODE.REQUEST_SIGN_UP});
       }
-      const inputHash = hashPassword(password, checkResult[0].salt);
-      if (inputHash === checkResult[0].hash){
-        return res.send({status: STATUS_CODE.SUCCESS});
+      const inputHash = hashPassword(password,  userData.salt);
+      if (inputHash ===  userData.hash){
+        const name =  userData.name;
+        const email =  userData.email;
+        const visions =  userData.visions;
+        const type =  userData.type;
+        return res.send({status: STATUS_CODE.SUCCESS,
+        data: { name,  email,  visions, type}});
       } else {
         return res.send({status: STATUS_CODE.INVALID_PASSWORD});
       }
