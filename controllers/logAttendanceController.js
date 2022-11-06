@@ -43,13 +43,12 @@ exports.readLogAttendance = async (req, res) => {
     const row_num = (!req.query.row_num) ? 50 : req.query.row_num;
     
     //form the const where clause where visions is required 
-    const where = ` WHERE date = CURDATE() AND ` + name_search + email_search + event + visions;
+    const where = ` WHERE ` + name_search + email_search + event + visions;
 
     //form the query
     const query = `SELECT name, email, attendance FROM fy_attendance `
     + where + orderBy + ' LIMIT ' + row_num + ' OFFSET ' + row_start;
     const viewusers = new Promise((resolve, reject) => {
-        console.log(query)
         connection.query(query,(err, res) => {
             if (err) reject(err);
             else resolve(res);
