@@ -74,7 +74,7 @@ exports.readLogAttendance = async (req, res) => {
 }
 
 exports.submit = async (req, res) =>{
-    const edits = req.body;
+    const {edits} = req.body;
     for (const edit of edits){
         try {
             const editResult = await attendanceManager.editAttendance(edit, `student_attendance`);
