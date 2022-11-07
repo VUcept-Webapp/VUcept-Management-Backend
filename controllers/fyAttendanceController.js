@@ -6,6 +6,16 @@ const bigViewName = `fy_attendance`;
 //global variable to cache current read data 
 var currentRead;
 
+exports.sendWeeklyReport = async (req, res) =>{
+    try {
+        const sendReport = await attendanceManager.sendWeeklyReport();
+        return res.send(sendReport);
+    } catch (e){
+        console.log(e);
+        return res.send({status: STATUS_CODE.ERROR});
+    }
+}
+
 exports.readFyAttendance = async (req, res) => {
     try {
         const readAttendance = await attendanceManager.readAttendance(req.query, bigViewName);

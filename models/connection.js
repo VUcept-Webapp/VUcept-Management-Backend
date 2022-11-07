@@ -1,8 +1,8 @@
 const mysql = require('mysql2');
 
-// database connection
-// Connection Pool
-const connection = mysql.createConnection({
+// database connection - Connection Pool
+const pool = mysql.createPool({
+    connectionLimit : 100,
     host: process.env.RDS_HOSTNAME,
     user: process.env.RDS_USERNAME,
     password: process.env.RDS_PASSWORD,
@@ -10,10 +10,11 @@ const connection = mysql.createConnection({
     database: process.env.RDS_DATABASE
 });
 
-connection.connect(
-    function (err) {
-        if (err) throw err; 
-        console.log("Connected!");
-    });
+pool.getConnection((err, connection)=> {
+    if(err)
+    throw err;
+    console.log('Database connected successfully');
+    connection.release();
+});
 
-module.exports = connection;
+module.exports = pool;
