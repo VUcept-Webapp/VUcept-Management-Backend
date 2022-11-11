@@ -87,7 +87,6 @@ exports.deleteVUEvent =  async (req, res) => {
 
   const query = 'DELETE FROM vuceptor_events WHERE event_id = ' + event_id;
   
-
   try {
     let verify = await eventHelpers.verifyEvent(event_id, 'vuceptor_events');
 

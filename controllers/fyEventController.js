@@ -66,7 +66,7 @@ exports.updatefyEvent =  async (req, res) => {
       await updateEvent;
       return res.send({ status: STATUS_CODE.SUCCESS });
   } catch (err){
-      return res.send({status: STATUS_CODE.ERROR, result: query});
+      return res.send({status: STATUS_CODE.ERROR});
   }
 }
 
