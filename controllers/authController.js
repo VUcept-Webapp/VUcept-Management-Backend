@@ -1,8 +1,6 @@
 const crypto = require('crypto'); 
-const { dbConfig, connect, disconnect } = require('../models/connection');
+const connection = require('../models/connection');
 const { STATUS_CODE, REGISTRATION_STATUS, transport } = require('../lib/constants');
-
-const connection = dbConfig(); // need to implement disconnect
 
   exports.login = async (req, res) => {
     const {email, password} = req.query;

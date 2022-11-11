@@ -1,7 +1,5 @@
 const { STATUS_CODE, SORT_ORDER } = require('../lib/constants');
-const { dbConfig, connect, disconnect } = require('../models/connection');
-
-const connection = dbConfig(); // need to implement disconnect
+const connection = require('../models/connection');
 
 // Shared functions: insertFy
 exports.insertFy = ({ email, name, visions }) => {
