@@ -65,7 +65,7 @@ exports.updateVUEvent =  async (req, res) => {
       let verify = await eventHelpers.verifyUser(logged_by);
 
       if (verify.NUM == 0) {
-        return res.send({ status: STATUS_CODE.INCORRECT_USER_EMAIL });
+        return res.send({ status: STATUS_CODE.UNAUTHORIZED });
       }
 
       const updateEvent = new Promise((resolve, reject) => {
