@@ -9,18 +9,19 @@ dbConfig = () => {
         console.log("Testing Environment");
     }
 
-    connection = mysql.createConnection(DB_CONFIG);
-
+    connection = mysql.createPool(DB_CONFIG);
     return connection;
 };
 
 connect = (connection) => {
-    connection.connect(function (err) {
-        if (err){
-            return console.error('error: ' + err.message);
-        }
-        console.log('Connected to database');
-      });
+    connection.getConnection((err, connection)=> {
+            if(err) {
+                return console.error('error: ' + err.message);
+            }
+
+            console.log('Database connected successfully');
+            connection.release();
+    });
 }
 
 disconnect = (connection) => {
