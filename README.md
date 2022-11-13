@@ -18,4 +18,9 @@ Reqeust Handling: Express
     express: 4.18.1<br/>
     mysql: latest (if this doesn't work, use mysql2)<br/>
     nodemon: 2.0.20
-2. node index.js
+2. npm install
+3. node index.js
+// change to server.js
+
+## Test suite
+1. npm i -D jest supertest

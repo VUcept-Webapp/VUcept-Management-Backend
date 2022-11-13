@@ -1,9 +1,6 @@
 const { STATUS_CODE, SORT_ORDER } = require('../lib/constants');
 const connection = require('../models/connection');
 
-// FIXME: how are user_id and student_id generated
-
-
 // Shared functions: insertFy
 exports.insertFy = ({ email, name, visions }) => {
   const query = 'INSERT INTO students (email, name, visions) VALUES (?,?,?)';

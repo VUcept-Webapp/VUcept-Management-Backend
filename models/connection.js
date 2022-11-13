@@ -1,20 +1,21 @@
 const mysql = require('mysql2');
+const { rds_connection, test_connection } = require('../lib/db_config');
 
-// database connection - Connection Pool
-const pool = mysql.createPool({
-    connectionLimit : 100,
-    host: process.env.RDS_HOSTNAME,
-    user: process.env.RDS_USERNAME,
-    password: process.env.RDS_PASSWORD,
-    port: process.env.RDS_PORT,
-    database: process.env.RDS_DATABASE
-});
+let DB_CONFIG = rds_connection;
 
-pool.getConnection((err, connection)=> {
-    if(err)
-    throw err;
+if (process.env.TEST_STATUS === '1'){
+    DB_CONFIG = test_connection;
+    console.log("Testing Environment");
+}
+
+connection = mysql.createPool(DB_CONFIG);
+connection.getConnection((err, connection)=> {
+    if(err) {
+        return console.error('error: ' + err.message);
+    }
+
     console.log('Database connected successfully');
     connection.release();
 });
 
-module.exports = pool;
+module.exports = connection;
