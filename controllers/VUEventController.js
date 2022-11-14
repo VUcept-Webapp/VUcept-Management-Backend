@@ -30,7 +30,7 @@ exports.readVUEvent =  async (req, res) => {
 }
 
 exports.createVUEvent =  async (req, res) => {
-    const {title, logged_by, date, start_time, description, location, end_time} = req.body;
+    const {title, logged_by, date, start_time, description, location, end_time, mandatory} = req.body;
     const query = 'INSERT INTO vuceptor_events (title, logged_by, date, start_time, description, location, end_time) VALUES (?,?,?,?,?,?,?)';
 
     try {
@@ -48,6 +48,14 @@ exports.createVUEvent =  async (req, res) => {
       });
       
       const addEventResult = await addEvent;
+
+      if (mandatory == 'true'){
+        let getId = await eventHelpers.getEventId('vuceptor_events');
+        let getAllPerson = await eventHelpers.getAllPersonId('users');
+  
+        await eventHelpers.insertEventAttendance(getId.ID, getAllPerson, 'vuceptor_attendance', 'vuceptor_id');
+      }
+
       if (addEventResult.affectedRows){
         return res.send({ status: STATUS_CODE.SUCCESS });
       }

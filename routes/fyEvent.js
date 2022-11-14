@@ -8,6 +8,6 @@ routerfyEvent.post('/createfyEvent', fyEventController.createfyEvent);
 routerfyEvent.post('/updatefyEvent', fyEventController.updatefyEvent);
 routerfyEvent.post('/deletefyEvent', fyEventController.deletefyEvent);
 routerfyEvent.post('/resetfyEvent', fyEventController.resetfyEvent);
-routerfyEvent.post('/fyEventLoadfromcsv', fyEventController.fyEventLoadfromcsv);
+// routerfyEvent.post('/fyEventLoadfromcsv', fyEventController.fyEventLoadfromcsv);
 
 module.exports = routerfyEvent;
