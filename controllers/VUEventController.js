@@ -16,7 +16,6 @@ exports.addVUEvent = ({title, logged_by, date, start_time, description, location
   return promise;
 };
 
-
 exports.readVUEvent =  async (req, res) => {
   const title = (!req.query.title) ? '' : ' AND (title = \'' + req.query.title + '\')' ;
 
@@ -144,7 +143,7 @@ exports.resetVUEvent = async (req, res) => {
   }
 };
 
-exports.fyEventLoadfromcsv = async (req, res) => {
+exports.VUEventLoadfromcsv = async (req, res) => {
   const {file} = req.body;
 
   // Fetching the data from each row
