@@ -77,3 +77,13 @@ exports.getVUAttendanceEventsList =  async (req, res) => {
         return res.send({status: STATUS_CODE.ERROR});
     }
 }
+
+exports.getOneVUAttendance = async (req, res) =>{
+    try {
+        const data = await attendanceManager.getOneVUAttendance(req.query, actualTableName);
+        return res.send(data);
+    } catch (e){
+        console.log(e);
+        return res.send({status: STATUS_CODE.ERROR});
+    }
+}
