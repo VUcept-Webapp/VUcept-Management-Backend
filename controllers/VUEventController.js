@@ -2,6 +2,21 @@ const connection = require('../models/connection');
 const { STATUS_CODE } = require('../lib/constants');
 const eventHelpers = require('../lib/eventHelpers');
 
+// Shared functions: insertUser
+exports.addVUEvent = ({title, logged_by, date, start_time, description, location, end_time}) => {
+  const query = 'INSERT INTO vuceptor_events (title, logged_by, date, start_time, description, location, end_time) VALUES (?,?,?,?,?,?,?)';
+
+  const promise = new Promise((resolve, reject) => {
+    connection.query(query, [title, logged_by, date, start_time, description, location, end_time], (err, res) => {
+      if (err) reject(err);
+      else resolve(res);
+    })
+  });
+
+  return promise;
+};
+
+
 exports.readVUEvent =  async (req, res) => {
   const title = (!req.query.title) ? '' : ' AND (title = \'' + req.query.title + '\')' ;
 
@@ -31,8 +46,7 @@ exports.readVUEvent =  async (req, res) => {
 
 exports.createVUEvent =  async (req, res) => {
     const {title, logged_by, date, start_time, description, location, end_time, mandatory} = req.body;
-    const query = 'INSERT INTO vuceptor_events (title, logged_by, date, start_time, description, location, end_time) VALUES (?,?,?,?,?,?,?)';
-
+    
     try {
       let verify = await eventHelpers.verifyUser(logged_by);
 
@@ -40,20 +54,13 @@ exports.createVUEvent =  async (req, res) => {
         return res.send({ status: STATUS_CODE.UNAUTHORIZED });
       }
 
-      const addEvent = new Promise((resolve, reject) => {
-        connection.query(query, [title, logged_by, date, start_time, description, location, end_time], (err, res) => {
-          if (err) reject(err);
-          else resolve(res);
-        })
-      });
-      
-      const addEventResult = await addEvent;
+      let addEventResult = await this.addVUEvent({title, logged_by, date, start_time, description, location, end_time});
 
       if (mandatory == 'true'){
         let getId = await eventHelpers.getEventId('vuceptor_events');
         let getAllPerson = await eventHelpers.getAllPersonId('users');
   
-        await eventHelpers.insertEventAttendance(getId.ID, getAllPerson, 'vuceptor_attendance', 'vuceptor_id');
+        await eventHelpers.insertEventAttendance(getId.ID, getAllPerson, 'user_id', 'vuceptor_attendance', 'vuceptor_id');
       }
 
       if (addEventResult.affectedRows){
@@ -136,3 +143,41 @@ exports.resetVUEvent = async (req, res) => {
       return res.send({status: STATUS_CODE.ERROR});
   }
 };
+
+exports.fyEventLoadfromcsv = async (req, res) => {
+  const {file} = req.body;
+
+  // Fetching the data from each row
+  // and inserting to the table
+  for (var i = 0; i < file.length; i++) {
+      var title = file[i]["title"],
+      logged_by = file[i]["logged_by"],
+      date = file[i]["date"],
+      start_time = file[i]["start_time"],
+      description = file[i]["description"],
+      location = file[i]["location"],
+      end_time = file[i]["end_time"],
+      mandatory = file[i]["mandatory"];
+
+      try {
+        let verify = await eventHelpers.verifyUser(logged_by);
+
+        if (verify.NUM == 0) {
+          return res.send({ status: STATUS_CODE.UNAUTHORIZED });
+        }
+
+        await this.addVUEvent({title, logged_by, date, start_time, description, location, end_time});
+        
+        if (mandatory == 'true'){
+          let getId = await eventHelpers.getEventId('vuceptor_events');
+          let getAllPerson = await eventHelpers.getAllPersonId('users');
+    
+          await eventHelpers.insertEventAttendance(getId.ID, getAllPerson, 'vuceptor_attendance', 'vuceptor_id');
+        }
+      } catch (error) {
+          return res.send({status: STATUS_CODE.ERROR});
+      }
+  }
+
+  return res.send({status: STATUS_CODE.SUCCESS});
+}

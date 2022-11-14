@@ -2,6 +2,20 @@ const connection = require('../models/connection');
 const { STATUS_CODE } = require('../lib/constants');
 const eventHelpers = require('../lib/eventHelpers');
 
+// Shared functions: insertUser
+exports.addfyEvent = ({title, date, start_time, description, location, end_time, week, visions}) => {
+  const query = 'INSERT INTO student_events (title, date, start_time, description, location, end_time, week, visions) VALUES (?,?,?,?,?,?,?,?)';
+
+  const promise = new Promise((resolve, reject) => {
+    connection.query(query, [title, date, start_time, description, location, end_time, week, visions], (err, res) => {
+      if (err) reject(err);
+      else resolve(res);
+    })
+  });
+
+  return promise;
+};
+
 exports.readfyEvent =  async (req, res) => {
   const title = (!req.query.title) ? '' : ' AND (title = \'' + req.query.title + '\')' ;
 
@@ -31,22 +45,14 @@ exports.readfyEvent =  async (req, res) => {
 
 exports.createfyEvent =  async (req, res) => {
     const {title, date, start_time, description, location, end_time, week, visions} = req.body;
-    const query = 'INSERT INTO student_events (title, date, start_time, description, location, end_time, week, visions) VALUES (?,?,?,?,?,?,?,?)';
 
     try {
-      const addEvent = new Promise((resolve, reject) => {
-        connection.query(query, [title, date, start_time, description, location, end_time, week, visions], (err, res) => {
-          if (err) reject(err);
-          else resolve(res);
-        })
-      });
-      
-      const addEventResult = await addEvent;
+      let addEventResult = await this.addfyEvent({title, date, start_time, description, location, end_time, week, visions});
 
       let getId = await eventHelpers.getEventId('student_events');
       let getAllPerson = await eventHelpers.getAllPersonId('students');
   
-      await eventHelpers.insertEventAttendance(getId.ID, getAllPerson, 'student_attendance', 'student_id');
+      await eventHelpers.insertEventAttendance(getId.ID, getAllPerson, 'student_id', 'student_attendance', 'student_id');
 
       if (addEventResult.affectedRows){
         return res.send({ status: STATUS_CODE.SUCCESS });
@@ -123,3 +129,32 @@ exports.resetfyEvent = async (req, res) => {
       return res.send({status: STATUS_CODE.ERROR});
   }
 };
+
+exports.fyEventLoadfromcsv = async (req, res) => {
+    const {file} = req.body;
+
+    // Fetching the data from each row
+    // and inserting to the table
+    for (var i = 0; i < file.length; i++) {
+        var title = file[i]["title"],
+        date = file[i]["date"],
+        start_time = file[i]["start_time"],
+        description = file[i]["description"],
+        location = file[i]["location"],
+        end_time = file[i]["end_time"],
+        week = file[i]["week"],
+        visions = file[i]["visions"];
+
+        try {
+          await this.addfyEvent({title, date, start_time, description, location, end_time, week, visions});
+          
+          let getId = await eventHelpers.getEventId('student_events');
+          let getAllPerson = await eventHelpers.getAllPersonId('students');
+          await eventHelpers.insertEventAttendance(getId.ID, getAllPerson, 'student_id', 'student_attendance', 'student_id');
+        } catch (error) {
+            return res.send({status: STATUS_CODE.ERROR});
+        }
+    }
+
+    return res.send({status: STATUS_CODE.SUCCESS});
+}
