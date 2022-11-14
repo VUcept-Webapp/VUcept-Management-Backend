@@ -1,6 +1,7 @@
 const crypto = require('crypto'); 
 const connection = require('../models/connection');
-const { STATUS_CODE, REGISTRATION_STATUS, transport } = require('../lib/constants');
+const { STATUS_CODE, REGISTRATION_STATUS} = require('../lib/constants');
+const sendEmail = require('../lib/mailHelpers');
 
   exports.login = async (req, res) => {
     const {email, password} = req.query;
@@ -33,19 +34,18 @@ const { STATUS_CODE, REGISTRATION_STATUS, transport } = require('../lib/constant
   
   exports.sendVerificationEmail = async (req, res) =>{
     const code = Math.floor(100000 + Math.random() * 900000);
-    const mailOptions = {
-      from: process.env.MAIL_EMAIL,
-      to: req.body.email,
-      subject: 'VUcept Management Verification Code',
-      text: 'Please enter the following verification code: ' + code
-    };
-    transport.sendMail(mailOptions, (error, info) => {
-      if (error) {
-        res.send({status: STATUS_CODE.ERROR});
-      } else {
-        res.send({status: STATUS_CODE.SUCCESS, code: code})
-      }
-    });
+    try {
+        sendEmail.sendEmail({
+        from: process.env.MAIL_EMAIL,
+        to: req.body.email,
+        subject: 'VUcept Management Verification Code',
+        text: 'Please enter the following verification code: ' + code
+      });
+      return res.send({status: STATUS_CODE.SUCCESS});
+    } catch (e){
+      console.log(e);
+      return res.send({status: STATUS_CODE.ERROR})
+    }
   }
   
   exports.signUp = async (req, res) => {
