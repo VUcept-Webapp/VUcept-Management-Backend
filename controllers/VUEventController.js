@@ -109,3 +109,22 @@ exports.deleteVUEvent =  async (req, res) => {
     return res.send({status: STATUS_CODE.ERROR});
   }
 }
+
+//reset the vuceptor events
+exports.resetVUEvent = async (req, res) => {
+  const query = 'DELETE FROM vuceptor_events;';
+
+  const reset = new Promise((resolve, reject) => {
+      connection.query(query, (err, res) => {
+          if (err) reject(err);
+          else resolve(res);
+      })
+  });
+
+  try {
+      await reset;
+      return res.send({status: STATUS_CODE.SUCCESS});
+  } catch (error) {
+      return res.send({status: STATUS_CODE.ERROR});
+  }
+};

@@ -6,5 +6,6 @@ routerVUEvent.get('/readVUEvent', VUEventController.readVUEvent);
 routerVUEvent.post('/createVUEvent', VUEventController.createVUEvent);
 routerVUEvent.post('/updateVUEvent', VUEventController.updateVUEvent);
 routerVUEvent.post('/deleteVUEvent', VUEventController.deleteVUEvent);
+routerVUEvent.post('/resetVUEvent', VUEventController.resetVUEvent);
 
 module.exports = routerVUEvent;

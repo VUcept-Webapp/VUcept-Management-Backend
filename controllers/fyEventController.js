@@ -3,7 +3,9 @@ const { STATUS_CODE } = require('../lib/constants');
 const eventHelpers = require('../lib/eventHelpers');
 
 exports.readfyEvent =  async (req, res) => {
-  const title = (!req.query.title) ? '' : ' AND (title = \'' + req.query.title + '\')' ;
+  const title_sort = (!req.query.title_sort) ? '' : ' title ' + req.query.title_sort;
+  const week_sort = (!req.query.week_sort) ? '' : ' week ' + req.query.week_sort;
+  const condition_order = (!req.query.condition_order) ? null : JSON.parse(req.query.condition_order);
 
   //set time range, which will be passed in as array of size 2
   const timeRange = (!req.query.time_range) ? '' : JSON.parse(req.query.time_range);
@@ -98,3 +100,54 @@ exports.deletefyEvent =  async (req, res) => {
     return res.send({status: STATUS_CODE.ERROR});
   }
 }
+
+//reset the first year events
+exports.resetfyEvent = async (req, res) => {
+  const query = 'DELETE FROM student_events;';
+
+  const reset = new Promise((resolve, reject) => {
+      connection.query(query, (err, res) => {
+          if (err) reject(err);
+          else resolve(res);
+      })
+  });
+
+  try {
+      await reset;
+      return res.send({status: STATUS_CODE.SUCCESS});
+  } catch (error) {
+      return res.send({status: STATUS_CODE.ERROR});
+  }
+};
+
+//load with csv file
+exports.fyEventLoadfromcsv = async (req, res) => {
+  const {file} = req.body;
+  var duplicates = [];
+
+  // Fetching the data from each row
+  // and inserting to the table "sample"
+  for (var i = 0; i < file.length; i++) {
+      var email = file[i]["email"],
+          name = file[i]["name"],
+          type = file[i]["type"],
+          visions = file[i]["visions"];
+
+      try {
+          let verify = await this.verifyUser(email);
+          if (verify.NUM > 0) {
+              duplicates.push(email);
+          } else {
+              await this.insertUser({email, name, type, visions});
+          }
+      } catch (error) {
+          return res.send({status: STATUS_CODE.ERROR});
+      }
+  }
+
+  if (duplicates.length == 0) {
+      return res.send({status: STATUS_CODE.SUCCESS});
+  } else {
+      return res.send({status: STATUS_CODE.EMAIL_USED, result: duplicates});
+  }
+};
