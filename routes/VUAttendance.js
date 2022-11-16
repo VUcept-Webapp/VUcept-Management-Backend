@@ -7,6 +7,7 @@ routerVUAttendance.get('/readVUAttendance', VUAttendanceController.readVUAttenda
 routerVUAttendance.get('/getVUAttendanceVisionsList', VUAttendanceController.getVUAttendanceVisionsList);
 routerVUAttendance.get('/getVUAttendanceEventsList', VUAttendanceController.getVUAttendanceEventsList);
 routerVUAttendance.get('/exportVUAttendance', VUAttendanceController.exportVUAttendance);
+routerVUAttendance.get('/getOneVUAttendance', VUAttendanceController.getOneVUAttendance);
 routerVUAttendance.post('/insertVUAttendance', VUAttendanceController.insertVUAttendance);
 routerVUAttendance.post('/editVUAttendance', VUAttendanceController.editVUAttendance);
 routerVUAttendance.post('/deleteVUAttendance', VUAttendanceController.deleteVUAttendance);
