@@ -3,7 +3,6 @@ const crypto = require('crypto');
 const connection = require('../models/connection');
 const { STATUS_CODE, REGISTRATION_STATUS} = require('../lib/constants');
 const sendEmail = require('../lib/mailHelpers');
-const jwt = require('jsonwebtoken');
 
 const authenticateUser = async (email, password) =>{
   try {
