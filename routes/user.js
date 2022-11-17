@@ -11,4 +11,6 @@ routerUser.post('/deleteUser', userController.deleteUser);
 routerUser.get('/readUser', userController.readUser);
 routerUser.get('/visionsNums', userController.visionsNums);
 
+routerUser.get('/readUser', userController.readUser);
+
 module.exports = routerUser;
