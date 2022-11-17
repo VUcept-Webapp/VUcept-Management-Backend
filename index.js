@@ -1,8 +1,6 @@
 const express = require('express');
 const cors = require("cors");
 const bodyParser = require("body-parser");
-const cron = require('node-cron');
-const attendanceManager = require('./lib/attendanceHelpers');
 
 require('dotenv').config();
 
@@ -16,9 +14,6 @@ app.use(cors());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
-app.get('/', function (req, res) {
-    res.send('GET request to homepage')
-})
 // routes for the APIs
 const userRoute = require('./routes/user');
 app.use('/', userRoute);
@@ -36,9 +31,6 @@ const VUEventRoute = require('./routes/VUEvent');
 app.use('/', VUEventRoute);
 const fyEventRoute = require('./routes/fyEvent');
 app.use('/', fyEventRoute);
-
-//send weekly reports 
-attendanceManager.scheduleWeeklyReports();
 
 app.listen(port, () => console.log(`Listening on port ${port}`));
 

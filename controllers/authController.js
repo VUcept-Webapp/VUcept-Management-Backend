@@ -4,6 +4,12 @@ const connection = require('../models/connection');
 const { STATUS_CODE, REGISTRATION_STATUS} = require('../lib/constants');
 const sendEmail = require('../lib/mailHelpers');
 
+/**
+ * check the user's authentication status
+ * @param {string} email 
+ * @param {string} password 
+ * @returns 
+ */
 const authenticateUser = async (email, password) =>{
   try {
     const checkResult = await checkUser(email.toLowerCase());
@@ -31,6 +37,12 @@ const authenticateUser = async (email, password) =>{
   }
 }
 
+/**
+ * logs the user when they are authenticated
+ * @param {Object} req 
+ * @param {Object} res 
+ * @returns 
+ */
 exports.login = async (req, res) => {
   const {email, password} = req.query;
   try {
@@ -41,7 +53,13 @@ exports.login = async (req, res) => {
     return res.send({status: STATUS_CODE.ERROR});
   }
 }
-  
+
+/**
+ * send verification email that has verification code during signup and login
+ * @param {Object} req 
+ * @param {Object} res 
+ * @returns 
+ */
 exports.sendVerificationEmail = async (req, res) =>{
   const code = Math.floor(100000 + Math.random() * 900000);
   try {
@@ -58,6 +76,12 @@ exports.sendVerificationEmail = async (req, res) =>{
   }
 }
 
+/**
+ * Create password for an authorized user
+ * @param {Object} req 
+ * @param {Object} res 
+ * @returns 
+ */
 exports.signUp = async (req, res) => {
   const {password, email} = req.body;
   //check for user status 
@@ -86,6 +110,12 @@ exports.signUp = async (req, res) => {
   }
 }
 
+/**
+ * change password for a specific user
+ * @param {Object} req 
+ * @param {Object} res 
+ * @returns 
+ */
 exports.changePassword = async (req, res) => {
   const {password, email} = req.body;
   //check for user status 
@@ -114,6 +144,11 @@ exports.changePassword = async (req, res) => {
   }
 }
 
+/**
+ * check and returns a user's information based on email
+ * @param {string} email 
+ * @returns 
+ */
 async function checkUser(email){
   const query = `SELECT * FROM users WHERE email = ?`;
   return new Promise((resolve, reject) => {
@@ -124,6 +159,12 @@ async function checkUser(email){
   })
 }
 
+/**
+ * change password for a user based on email
+ * @param {string} password 
+ * @param {string} email 
+ * @returns 
+ */
 async function changePassword (password, email) {
   const salt = crypto.randomBytes(16).toString('hex'); 
   const query = `UPDATE users 
@@ -138,9 +179,14 @@ async function changePassword (password, email) {
   })
 }
 
+/**
+ * create the encrypted password based on the user's specific salt
+ * @param {string} password 
+ * @param {string} salt 
+ * @returns 
+ */
 function hashPassword (password, salt) {
     // Hashing user's salt and password with 1000 iterations, 
     hash = crypto.pbkdf2Sync(password, salt, 1000, 64, `sha512`).toString(`hex`); 
     return hash;
 }
-
