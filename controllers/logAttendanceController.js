@@ -89,7 +89,7 @@ exports.submit = async (req, res) =>{
 
 exports.getLogVisionsEvents = async (req, res) =>{
     const visions = req.query.visions;
-    const query = `SELECT DISTINCT title from student_events WHERE visions = ?`;
+    const query = `SELECT DISTINCT title, event_id from student_events WHERE visions = ?`;
     const getEvents = new Promise((resolve, reject) => {
       connection.query(query, [visions], (err, res) => {
         if (err) reject(err);
@@ -98,11 +98,11 @@ exports.getLogVisionsEvents = async (req, res) =>{
     });
     try {
         const eventsResults = await getEvents;
-        var eventsArray = [];
-        for (const result of eventsResults){
-            eventsArray.push(result.title);
-        }
-        return res.send({status: STATUS_CODE.SUCCESS, data: eventsArray});
+        // var eventsArray = [];
+        // for (const result of eventsResults){
+        //     eventsArray.push(result.title);
+        // }
+        return res.send({status: STATUS_CODE.SUCCESS, data: eventsResults});
     } catch (e){
         console.log(e);
         return res.send({status: STATUS_CODE.ERROR});

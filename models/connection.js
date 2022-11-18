@@ -1,8 +1,7 @@
 const mysql = require('mysql2');
 const { rds_connection, test_connection } = require('../lib/db_config');
 
-let DB_CONFIG = rds_connection;
-
+var DB_CONFIG = rds_connection;
 if (process.env.TEST_STATUS === '1'){
     DB_CONFIG = test_connection;
     console.log("Testing Environment");
