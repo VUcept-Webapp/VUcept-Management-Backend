@@ -2,12 +2,38 @@ const connection = require('../models/connection');
 const { STATUS_CODE } = require('../lib/constants');
 const eventHelpers = require('../lib/eventHelpers');
 
-// Shared functions: insertUser
+// Shared functions
 exports.addEventAgg = ({title, date, description, is_common}) => {
   const query = 'INSERT INTO student_events_aggregate (title, date, description, is_common) VALUES (?,?,?,?)';
 
   const promise = new Promise((resolve, reject) => {
     connection.query(query, [title, date, description, is_common], (err, res) => {
+      if (err) reject(err);
+      else resolve(res);
+    })
+  });
+
+  return promise;
+}
+
+exports.updateEventAgg = ({title, date, description, is_common, event_id}) => {
+  const query = 'UPDATE student_events_aggregate SET title = ?, date = ?, description = ?, is_common = ? WHERE event_id = ?;';
+
+  const promise = new Promise((resolve, reject) => {
+    connection.query(query, [title, date, description, is_common, event_id], (err, res) => {
+      if (err) reject(err);
+      else resolve(res);
+    })
+  });
+
+  return promise;
+}
+
+exports.deleteEventAgg = ({event_id}) => {
+  var query = 'DELETE FROM student_events_aggregate WHERE event_id = ' + event_id;
+
+  const promise = new Promise((resolve, reject) => {
+    connection.query(query, (err, res) => {
       if (err) reject(err);
       else resolve(res);
     })
@@ -29,11 +55,63 @@ exports.addEventComm = (event_id, start_time, end_time, location) => {
   return promise;
 }
 
-exports.addVisionsInfo = ({visions, day, start_time, end_time, location, offset}) => {
-  const query = 'INSERT INTO visions_info (visions, day, start_time, end_time, location, offset) VALUES (?,?,?,?,?,?);';
+exports.updateEventComm = ({start_time, end_time, location, event_id}) => {
+  const query = 'UPDATE common_events SET start_time = ?, end_time = ?, location = ? WHERE event_id = ?;'
 
   const promise = new Promise((resolve, reject) => {
-    connection.query(query, [visions, day, start_time, end_time, location, offset], (err, res) => {
+    connection.query(query, [start_time, end_time, location, event_id], (err, res) => {
+      if (err) reject(err);
+      else resolve(res);
+    })
+  });
+
+  return promise;
+}
+
+exports.deleteEventComm = ({event_id}) => {
+  var query = 'DELETE FROM common_events WHERE event_id = ' + event_id;
+
+  const promise = new Promise((resolve, reject) => {
+    connection.query(query, (err, res) => {
+      if (err) reject(err);
+      else resolve(res);
+    })
+  });
+
+  return promise;
+}
+
+exports.addVisionsInfo = ({visions, day, start_time, end_time, location, offset}) => {
+  var query = 'INSERT INTO visions_info (visions, day, start_time, end_time, location, offset) VALUES (' + visions + ',?,?,?,?,?)';
+
+  const promise = new Promise((resolve, reject) => {
+    connection.query(query, [day, start_time, end_time, location, offset], (err, res) => {
+      if (err) reject(err);
+      else resolve(res);
+    })
+  });
+
+  return promise;
+}
+
+exports.updateVisionsInfo = ({visions, day, start_time, end_time, location, offset}) => {
+  var query = 'UPDATE visions_info SET day = ?, start_time = ?, end_time = ?, location = ?, offset = ? WHERE visions = ' + visions;
+  
+  const promise = new Promise((resolve, reject) => {
+    connection.query(query, [day, start_time, end_time, location, offset], (err, res) => {
+      if (err) reject(err);
+      else resolve(res);
+    })
+  });
+
+  return promise;
+}
+
+exports.reset = (table) => {
+  var query = 'DELETE FROM ' + table;
+
+  const promise = new Promise((resolve, reject) => {
+    connection.query(query, (err, res) => {
       if (err) reject(err);
       else resolve(res);
     })
@@ -78,16 +156,30 @@ exports.readfyEvent =  async (req, res) => {
 }
 
 exports.createfyEvent =  async (req, res) => {
-    const {title, date, description, is_common, start_time, end_time, location} = req.body;
+    const {title, date, description, is_common, start_time, end_time, location, visions, day} = req.body;
+
+    let offset = eventHelpers.findOffset(day);
 
     try {
+      let addEventResult = '';
+
+      if (start_time > end_time){
+        return res.send({ status: STATUS_CODE.INVALID_START_END_TIMES });
+      }
+
       if (is_common == 0){
-        let addEventResult = await this.addEventAgg({title, date, description, is_common});
+        addEventResult = await this.addEventAgg({title, date, description, is_common});
+
+        let verifyVisions = await eventHelpers.verifyVisions(visions);
+        if (verifyVisions.NUM != 0) {
+          await this.updateVisionsInfo({visions, day, start_time, end_time, location, offset});
+        } else {
+          await this.addVisionsInfo({visions, day, start_time, end_time, location, offset});
+        }
       } else {
         await this.addEventAgg({title, date, description, is_common});
         let getId = await eventHelpers.getEventId('student_events_aggregate');
-
-        let addEventResult = await this.addEventComm(getId.ID, start_time, end_time, location);
+        addEventResult = await this.addEventComm(getId.ID, start_time, end_time, location);
       }
       
       if (addEventResult.affectedRows){
@@ -101,64 +193,43 @@ exports.createfyEvent =  async (req, res) => {
 
 exports.updatefyEvent =  async (req, res) => {
   const {title, date, description, is_common, visions, start_time, location, end_time, day, event_id} = req.body;
-  var queryAgg = '';
-  var queryComm = '';
 
-  if (is_common == 0){
-    var queryAgg = 'UPDATE student_events_aggregate SET title = ?, date = ?, description = ?, is_common = ? WHERE event_id = ?;' + 
-    'UPDATE visions_info SET start_time = ?, end_time = ?, location = ?, day = ? WHERE visions = ?';
-  } else {
-    var queryComm = 'UPDATE student_events_aggregate SET title = ?, date = ?, description = ?, is_common = ? WHERE event_id = ?;' + 
-    'UPDATE common_events SET start_time = ?, end_time = ?, location = ? WHERE event_id = ?';
-  }
-  
   try {
+      if (start_time > end_time){
+        return res.send({ status: STATUS_CODE.INVALID_START_END_TIMES });
+      }
+    
+      await this.updateEventAgg({title, date, description, is_common, event_id});
+
       if (is_common == 0){
-        var updateEvent = new Promise((resolve, reject) => {
-          connection.query(queryAgg, [title, date, description, is_common, event_id, start_time, end_time, location, day, visions], (err, res) => {
-            if (err) reject(err);
-            else resolve(res);
-          })
-        });
+        await this.updateVisionsInfo({visions, day, start_time, end_time, location, offset});
       } else {
-        var updateEvent = new Promise((resolve, reject) => {
-          connection.query(queryComm, [title, date, description, is_common, event_id, start_time, end_time, location, event_id], (err, res) => {
-            if (err) reject(err);
-            else resolve(res);
-          })
-        });
+        await this.updateEventComm({start_time, end_time, location, event_id});
       }
 
-      await updateEvent;
       return res.send({ status: STATUS_CODE.SUCCESS });
   } catch (err){
-      return res.send({status: STATUS_CODE.ERROR});
+      return res.send({status: STATUS_CODE.ERROR, error: err});
   }
 }
 
 exports.deletefyEvent =  async (req, res) => {
   const event_id = req.body.event_id;
 
-  const query = 'DELETE FROM student_events WHERE event_id = ' + event_id;
-  
   try {
-    let verify = await eventHelpers.verifyEvent(event_id, 'student_events');
+    let verify = await eventHelpers.verifyEvent(event_id, 'student_events_aggregate');
 
-    if (verify.NUM == 0) {
+    if (verify.NUM == 0){
         return res.send({ status: STATUS_CODE.INCORRECT_EVENT_ID });
     }
 
-    const deleteEvent = new Promise((resolve, reject) => {
-      connection.query(query, (err, res) => {
-        if (err) reject(err);
-        else resolve(res);
-      })
-    });
+    await this.deleteEventAgg({event_id});
 
-    let result = await deleteEvent;
-    if (result.affectedRows) {
-        return res.send({status: STATUS_CODE.SUCCESS});
+    if (verify.COMMON == 1){
+      await this.deleteEventComm({event_id});
     }
+    
+    return res.send({status: STATUS_CODE.SUCCESS});
   } catch (error) {
     return res.send({status: STATUS_CODE.ERROR});
   }
@@ -166,17 +237,10 @@ exports.deletefyEvent =  async (req, res) => {
 
 //reset the first year events
 exports.resetfyEvent = async (req, res) => {
-  const query = 'DELETE FROM student_events_aggregate; DELETE FROM common_events; DELETE FROM visions_info;';
-
-  const reset = new Promise((resolve, reject) => {
-      connection.query(query, (err, res) => {
-          if (err) reject(err);
-          else resolve(res);
-      })
-  });
-
   try {
-      await reset;
+      await this.reset('student_events_aggregate');
+      await this.reset('common_events');
+      await this.reset('visions_info');
       return res.send({status: STATUS_CODE.SUCCESS});
   } catch (error) {
       return res.send({status: STATUS_CODE.ERROR});
@@ -191,10 +255,11 @@ exports.fyVisionsEventLoadfromcsv = async (req, res) => {
     for (var i = 0; i < file.length; i++) {
         var title = file[i]["title"],
         date = file[i]["date"],
-        description = file[i]["description"];
+        description = file[i]["description"],
+        is_common = 0;
 
         try {
-          await this.addVisionsEvent({title, date, description});
+          await this.addEventAgg({title, date, description, is_common});
         } catch (error) {
           return res.send({status: STATUS_CODE.ERROR});
         }
@@ -205,6 +270,7 @@ exports.fyVisionsEventLoadfromcsv = async (req, res) => {
 
 exports.fyVisionsInfoLoadfromcsv = async (req, res) => {
   const {file} = req.body;
+  var invalid_time = [];
 
   // Fetching the data from each row
   // and inserting to the table
@@ -213,38 +279,24 @@ exports.fyVisionsInfoLoadfromcsv = async (req, res) => {
       day = file[i]["day"],
       start_time = file[i]["start_time"],
       end_time = file[i]["end_time"],
-      location = file[i]["location"],
-      offset = 0;
+      location = file[i]["location"];
 
-      switch (day) {
-        case "Monday":
-          offset = 0;
-          break;
-        case "Tuesday":
-          offset = 1;
-          break;
-        case "Wednesday":
-          offset = 2;
-          break;
-        case "Thursday":
-          offset = 3;
-          break;
-        case "Friday":
-          offset = 4;
-          break;
-        case "Saturday":
-          offset = 5;
-          break;
-        case "Sunday":
-          offset = 6;
-      }
+      var offset = eventHelpers.findOffset(day);
 
       try {
-        await this.addVisionsInfo({visions, day, start_time, end_time, location, offset});
+        if (start_time > end_time){
+          invalid_time.push(visions);
+        } else {
+          await this.addVisionsInfo({visions, day, start_time, end_time, location, offset});
+        }
       } catch (error) {
         return res.send({status: STATUS_CODE.ERROR});
       }
   }
 
-  return res.send({status: STATUS_CODE.SUCCESS});
+  if (invalid_time.length == 0) {
+    return res.send({status: STATUS_CODE.SUCCESS});
+  } else {
+    return res.send({status: STATUS_CODE.INVALID_START_END_TIMES, result: invalid_time});
+  }
 }
