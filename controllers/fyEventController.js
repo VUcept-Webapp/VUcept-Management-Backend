@@ -14,7 +14,7 @@ exports.addEventAgg = ({title, date, description, is_common}) => {
   });
 
   return promise;
-};
+}
 
 exports.addEventComm = (event_id, start_time, end_time, location) => {
   const query = 'INSERT INTO common_events (event_id, start_time, end_time, location) VALUES (?,?,?,?);';
@@ -27,7 +27,20 @@ exports.addEventComm = (event_id, start_time, end_time, location) => {
   });
 
   return promise;
-};
+}
+
+exports.addVisionsInfo = ({visions, day, start_time, end_time, location, offset}) => {
+  const query = 'INSERT INTO visions_info (visions, day, start_time, end_time, location, offset) VALUES (?,?,?,?,?,?);';
+
+  const promise = new Promise((resolve, reject) => {
+    connection.query(query, [visions, day, start_time, end_time, location, offset], (err, res) => {
+      if (err) reject(err);
+      else resolve(res);
+    })
+  });
+
+  return promise;
+}
 
 // require parameters time_range, visions
 // can only return the monday for the event
@@ -36,14 +49,14 @@ exports.readfyEvent =  async (req, res) => {
   const timeRange = (!req.query.time_range) ? '' : JSON.parse(req.query.time_range);
   const dateClause =  timeRange  == '' ? '' : ' WHERE (student_events_aggregate.date >= \'' + timeRange[0] + '\' AND student_events_aggregate.date <= \'' + timeRange[1] + '\')';
 
-  var query = ' SELECT student_events_aggregate.event_id, student_events_aggregate.title, student_events_aggregate.description, student_events_aggregate.date, visions_info.start_time, visions_info.end_time, visions_info.location, visions_info.day' + 
+  var query = ' SELECT student_events_aggregate.event_id, student_events_aggregate.title, student_events_aggregate.description, student_events_aggregate.date, visions_info.start_time, visions_info.end_time, visions_info.location, visions_info.offset' + 
               ' FROM mydb.student_events_aggregate ' + 
               ' CROSS JOIN mydb.visions_info ' +
               dateClause + 
               ' AND visions_info.visions = ' + req.query.visions + 
               ' AND student_events_aggregate.is_common = 0' + 
               ' UNION ' +
-              ' SELECT student_events_aggregate.event_id, student_events_aggregate.title, student_events_aggregate.description, student_events_aggregate.date, common_events.start_time, common_events.end_time, common_events.location, NULL as day ' +
+              ' SELECT student_events_aggregate.event_id, student_events_aggregate.title, student_events_aggregate.description, student_events_aggregate.date, common_events.start_time, common_events.end_time, common_events.location, 0 as offset ' +
               ' FROM mydb.student_events_aggregate ' +
               ' JOIN mydb.common_events ON common_events.event_id = student_events_aggregate.event_id ' +
               dateClause + 
@@ -168,7 +181,7 @@ exports.resetfyEvent = async (req, res) => {
   } catch (error) {
       return res.send({status: STATUS_CODE.ERROR});
   }
-};
+}
 
 exports.fyVisionsEventLoadfromcsv = async (req, res) => {
     const {file} = req.body;
@@ -188,4 +201,50 @@ exports.fyVisionsEventLoadfromcsv = async (req, res) => {
     }
 
     return res.send({status: STATUS_CODE.SUCCESS});
+}
+
+exports.fyVisionsInfoLoadfromcsv = async (req, res) => {
+  const {file} = req.body;
+
+  // Fetching the data from each row
+  // and inserting to the table
+  for (var i = 0; i < file.length; i++) {
+      var visions = file[i]["visions"],
+      day = file[i]["day"],
+      start_time = file[i]["start_time"],
+      end_time = file[i]["end_time"],
+      location = file[i]["location"],
+      offset = 0;
+
+      switch (day) {
+        case "Monday":
+          offset = 0;
+          break;
+        case "Tuesday":
+          offset = 1;
+          break;
+        case "Wednesday":
+          offset = 2;
+          break;
+        case "Thursday":
+          offset = 3;
+          break;
+        case "Friday":
+          offset = 4;
+          break;
+        case "Saturday":
+          offset = 5;
+          break;
+        case "Sunday":
+          offset = 6;
+      }
+
+      try {
+        await this.addVisionsInfo({visions, day, start_time, end_time, location, offset});
+      } catch (error) {
+        return res.send({status: STATUS_CODE.ERROR});
+      }
+  }
+
+  return res.send({status: STATUS_CODE.SUCCESS});
 }
