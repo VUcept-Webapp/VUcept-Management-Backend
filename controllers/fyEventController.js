@@ -209,7 +209,7 @@ exports.updatefyEvent =  async (req, res) => {
 
       return res.send({ status: STATUS_CODE.SUCCESS });
   } catch (err){
-      return res.send({status: STATUS_CODE.ERROR, error: err});
+      return res.send({status: STATUS_CODE.ERROR});
   }
 }
 

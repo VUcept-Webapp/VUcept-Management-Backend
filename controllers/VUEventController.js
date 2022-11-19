@@ -3,30 +3,25 @@ const { STATUS_CODE } = require('../lib/constants');
 const eventHelpers = require('../lib/eventHelpers');
 
 // Shared functions: insertUser
-exports.addVUEvent = ({title, logged_by, date, start_time, description, location, end_time}) => {
-  const query = 'INSERT INTO vuceptor_events (title, logged_by, date, start_time, description, location, end_time) VALUES (?,?,?,?,?,?,?)';
+exports.addVUEvent = ({title, date, start_time, description, location, end_time, mandatory}) => {
+  const query = 'INSERT INTO vuceptor_events (title, date, start_time, description, location, end_time, mandatory) VALUES (?,?,?,?,?,?,?)';
 
   const promise = new Promise((resolve, reject) => {
-    connection.query(query, [title, logged_by, date, start_time, description, location, end_time], (err, res) => {
+    connection.query(query, [title, date, start_time, description, location, end_time, mandatory], (err, res) => {
       if (err) reject(err);
       else resolve(res);
     })
   });
 
   return promise;
-};
+}
 
 exports.readVUEvent =  async (req, res) => {
-  const title = (!req.query.title) ? '' : ' AND (title = \'' + req.query.title + '\')' ;
-
   //set time range, which will be passed in as array of size 2
   const timeRange = (!req.query.time_range) ? '' : JSON.parse(req.query.time_range);
   const dateClause =  timeRange  == '' ? '' : ' (date >= \'' + timeRange[0] + '\' AND date <= \'' + timeRange[1] + '\')';
 
-  var query = 'SELECT * FROM vuceptor_events';
-  if ((dateClause != '') || (title != '')){
-    query = query + ' WHERE ' + dateClause + title;
-  }
+  var query = 'SELECT * FROM vuceptor_events WHERE ' + dateClause;
 
   const readEvent = new Promise((resolve, reject) => {
     connection.query(query, (err, res) => {
@@ -44,46 +39,33 @@ exports.readVUEvent =  async (req, res) => {
 }
 
 exports.createVUEvent =  async (req, res) => {
-    const {title, logged_by, date, start_time, description, location, end_time, mandatory} = req.body;
+    const {title, date, start_time, description, location, end_time, mandatory} = req.body;
     
     try {
-      let verify = await eventHelpers.verifyUser(logged_by);
+      await this.addVUEvent({title, date, start_time, description, location, end_time, mandatory});
 
-      if (verify.NUM == 0) {
-        return res.send({ status: STATUS_CODE.UNAUTHORIZED });
-      }
-
-      let addEventResult = await this.addVUEvent({title, logged_by, date, start_time, description, location, end_time});
-
-      if (mandatory == 'true'){
+      if (mandatory == 1){ // mandatory is true
         let getId = await eventHelpers.getEventId('vuceptor_events');
         let getAllPerson = await eventHelpers.getAllPersonId('users');
-  
-        await eventHelpers.insertEventAttendance(getId.ID, getAllPerson, 'user_id', 'vuceptor_attendance', 'vuceptor_id');
+
+        if (getAllPerson.length != 0){
+          await eventHelpers.insertEventAttendance(getId.ID, getAllPerson, 'user_id', 'vuceptor_attendance', 'vuceptor_id');
+        }
       }
 
-      if (addEventResult.affectedRows){
-        return res.send({ status: STATUS_CODE.SUCCESS });
-      }
+      return res.send({ status: STATUS_CODE.SUCCESS });
     } catch (err){
-        console.log(err);
         return res.send({ status: STATUS_CODE.ERROR });
     }
 }
 
 exports.updateVUEvent =  async (req, res) => {
-  const {title, logged_by, date, start_time, description, location, end_time, event_id} = req.body;
-  const query = 'UPDATE vuceptor_events SET title = ?, logged_by = ?, date = ?, start_time = ?, description = ?, location = ?, end_time = ? WHERE event_id = ?';
+  const {title, date, start_time, description, location, end_time, mandatory, event_id} = req.body;
+  const query = 'UPDATE vuceptor_events SET title = ?, date = ?, start_time = ?, description = ?, location = ?, end_time = ?, mandatory = ? WHERE event_id = ?';
 
   try {
-      let verify = await eventHelpers.verifyUser(logged_by);
-
-      if (verify.NUM == 0) {
-        return res.send({ status: STATUS_CODE.UNAUTHORIZED });
-      }
-
       const updateEvent = new Promise((resolve, reject) => {
-        connection.query(query, [title, logged_by, date, start_time, description, location, end_time, event_id], (err, res) => {
+        connection.query(query, [title, date, start_time, description, location, end_time, mandatory, event_id], (err, res) => {
           if (err) reject(err);
           else resolve(res);
         })
@@ -115,11 +97,10 @@ exports.deleteVUEvent =  async (req, res) => {
       })
     });
 
-    let result = await deleteEvent;
-    if (result.affectedRows) {
-        return res.send({status: STATUS_CODE.SUCCESS});
-    }
+    await deleteEvent;
+    return res.send({status: STATUS_CODE.SUCCESS});
   } catch (error) {
+    console.log(error);
     return res.send({status: STATUS_CODE.ERROR});
   }
 }
@@ -141,7 +122,7 @@ exports.resetVUEvent = async (req, res) => {
   } catch (error) {
       return res.send({status: STATUS_CODE.ERROR});
   }
-};
+}
 
 exports.VUEventLoadfromcsv = async (req, res) => {
   const {file} = req.body;
@@ -150,7 +131,6 @@ exports.VUEventLoadfromcsv = async (req, res) => {
   // and inserting to the table
   for (var i = 0; i < file.length; i++) {
       var title = file[i]["title"],
-      logged_by = file[i]["logged_by"],
       date = file[i]["date"],
       start_time = file[i]["start_time"],
       description = file[i]["description"],
@@ -159,19 +139,13 @@ exports.VUEventLoadfromcsv = async (req, res) => {
       mandatory = file[i]["mandatory"];
 
       try {
-        let verify = await eventHelpers.verifyUser(logged_by);
-
-        if (verify.NUM == 0) {
-          return res.send({ status: STATUS_CODE.UNAUTHORIZED });
-        }
-
-        await this.addVUEvent({title, logged_by, date, start_time, description, location, end_time});
+        await this.addVUEvent({title, date, start_time, description, location, end_time, mandatory});
         
-        if (mandatory == 'true'){
+        if (mandatory == 1){
           let getId = await eventHelpers.getEventId('vuceptor_events');
           let getAllPerson = await eventHelpers.getAllPersonId('users');
     
-          await eventHelpers.insertEventAttendance(getId.ID, getAllPerson, 'vuceptor_attendance', 'vuceptor_id');
+          await eventHelpers.insertEventAttendance(getId.ID, getAllPerson, 'user_id', 'vuceptor_attendance', 'vuceptor_id');
         }
       } catch (error) {
           return res.send({status: STATUS_CODE.ERROR});
