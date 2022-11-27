@@ -194,6 +194,8 @@ exports.createfyEvent =  async (req, res) => {
 exports.updatefyEvent =  async (req, res) => {
   const {title, date, description, is_common, visions, start_time, location, end_time, day, event_id} = req.body;
 
+  let offset = eventHelpers.findOffset(day);
+  
   try {
       if (start_time > end_time){
         return res.send({ status: STATUS_CODE.INVALID_START_END_TIMES });
