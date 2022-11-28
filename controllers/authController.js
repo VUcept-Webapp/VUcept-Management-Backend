@@ -3,6 +3,28 @@ const crypto = require('crypto');
 const connection = require('../models/connection');
 const { STATUS_CODE, REGISTRATION_STATUS} = require('../lib/constants');
 const sendEmail = require('../lib/mailHelpers');
+const jwt = require('jsonwebtoken');
+
+/**
+ * Generate the access token for login and signup 
+ * @param {Object} user 
+ * @returns the access token string
+ */
+const generateAccessToken = (user) => {
+  return jwt.sign(user, process.env.ACCESS_TOKEN_SECRET,
+  {
+    expiresIn: '30m'
+  });
+}
+
+/**
+ * the refresh token for login and signup; it has no expiration as we need to handle it manually
+ * @param {Object} user 
+ * @returns the refresh token string
+ */
+const generateRefreshToken = (user) => {
+  return jwt.sign(user, process.env.REFRESH_TOKEN_SECRET);
+}
 
 /**
  * check the user's authentication status
@@ -27,7 +49,7 @@ const authenticateUser = async (email, password) =>{
       const visions =  userData.visions;
       const type =  userData.type;
       return ({status: STATUS_CODE.SUCCESS,
-      data: { name,  email,  visions, type}});
+      user: { name,  email,  visions, type}});
     } else {
       return ({status: STATUS_CODE.INVALID_PASSWORD});
     }
@@ -38,18 +60,64 @@ const authenticateUser = async (email, password) =>{
 }
 
 /**
+ * insert a refresh token into the db
+ * @param {string} token 
+ * @returns Promise
+ */
+const storeToken = (token) =>{
+  const query = "INSERT INTO tokens (token) VALUES (?)";
+  return new Promise((resolve, reject) => {
+    connection.query(query, token, (err, res) => {
+      if (err) reject(err);
+      else resolve(res);
+    })
+  });
+}
+
+/**
+ * delete a refresh token fron the db
+ * @param {string} token 
+ * @returns Promise
+ */
+const deleteToken = (token) =>{
+  const query = "DELETE FROM tokens WHERE token = ?";
+  return new Promise((resolve, reject) => {
+    connection.query(query, token, (err, res) => {
+      if (err) reject(err);
+      else resolve(res);
+    })
+  });
+}
+
+/**
  * logs the user when they are authenticated
  * @param {Object} req 
  * @param {Object} res 
  * @returns 
  */
 exports.login = async (req, res) => {
-  const {email, password} = req.query;
+  const {email, password} = req.body;
   try {
     //authenticate user 
     const authResult = await authenticateUser(email, password);
-    return res.send(authResult);
+    if (authResult.status !== STATUS_CODE.SUCCESS){
+      return res.send(authResult);
+    } else {
+      const user = authResult.user;
+      //generate tokens for authorized users 
+      const accessToken = generateAccessToken(user);
+      const refreshToken = generateRefreshToken(user);
+      //store the refresh token in the db 
+      try {
+        storeToken(refreshToken);
+      } catch (e){
+        console.log(e);
+        return res.send({status: STATUS_CODE.ERROR});
+      }
+      return res.send({status : STATUS_CODE.SUCCESS, user, accessToken, refreshToken});
+    }
   } catch (e){
+    console.log(e);
     return res.send({status: STATUS_CODE.ERROR});
   }
 }
@@ -114,7 +182,7 @@ exports.signUp = async (req, res) => {
  * change password for a specific user
  * @param {Object} req 
  * @param {Object} res 
- * @returns 
+ * @returns the status code of the operation 
  */
 exports.changePassword = async (req, res) => {
   const {password, email} = req.body;
@@ -147,7 +215,7 @@ exports.changePassword = async (req, res) => {
 /**
  * check and returns a user's information based on email
  * @param {string} email 
- * @returns 
+ * @returns all relevant information about the user 
  */
 async function checkUser(email){
   const query = `SELECT * FROM users WHERE email = ?`;
@@ -183,10 +251,43 @@ async function changePassword (password, email) {
  * create the encrypted password based on the user's specific salt
  * @param {string} password 
  * @param {string} salt 
- * @returns 
+ * @returns the hashed password string
  */
-function hashPassword (password, salt) {
+const  hashPassword = (password, salt) => {
     // Hashing user's salt and password with 1000 iterations, 
     hash = crypto.pbkdf2Sync(password, salt, 1000, 64, `sha512`).toString(`hex`); 
     return hash;
+}
+
+/**
+ * sign out the user by deleting their refresh token out of the database 
+ * @param {Object} req 
+ * @param {Object} res 
+ */
+exports.signOut = async (req, res) => {
+  const token = req.body.refreshToken;
+  try {
+    deleteToken(token);
+    return res.send({status : STATUS_CODE.SUCCESS});
+  } catch (e){
+    return res.send({status: STATUS_CODE.ERROR});
+  }
+}
+
+/**
+ * The middleware that authenticate an access token
+ * @param {Object} req 
+ * @param {Object} res 
+ * @param {function} next 
+ */
+exports.authenticateToken = (req, res, next) =>{
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  if (!token) return res.send({status: STATUS_CODE.NO_TOKEN});
+
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, user) =>{
+    if (err) return res.send({status: STATUS_CODE.NOT_VALID_TOKEN});
+    req.user = user;
+    next();
+  })
 }
