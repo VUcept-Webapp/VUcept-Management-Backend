@@ -273,6 +273,7 @@ exports.fyVisionsEventLoadfromcsv = async (req, res) => {
 exports.fyVisionsInfoLoadfromcsv = async (req, res) => {
   const {file} = req.body;
   var invalid_time = [];
+  var duplicate_visions = [];
 
   // Fetching the data from each row
   // and inserting to the table
@@ -286,8 +287,12 @@ exports.fyVisionsInfoLoadfromcsv = async (req, res) => {
       var offset = eventHelpers.findOffset(day);
 
       try {
+        let verifyVisions = await eventHelpers.verifyVisions(visions);
+
         if (start_time > end_time){
           invalid_time.push(visions);
+        } else if (verifyVisions.NUM != 0) {
+          duplicate_visions.push(visions);
         } else {
           await this.addVisionsInfo({visions, day, start_time, end_time, location, offset});
         }
@@ -299,6 +304,27 @@ exports.fyVisionsInfoLoadfromcsv = async (req, res) => {
   if (invalid_time.length == 0) {
     return res.send({status: STATUS_CODE.SUCCESS});
   } else {
-    return res.send({status: STATUS_CODE.INVALID_START_END_TIMES, result: invalid_time});
+    return res.send({status: STATUS_CODE.INVALID_START_END_TIMES, result: {invalid_time, duplicate_visions}});
   }
 }
+
+exports.visionsEntered = async (req, res) => {
+  const query = 'SELECT visions FROM visions_info ORDER BY visions ASC';
+
+  const returnMaxVisions = new Promise((resolve, reject) => {
+      connection.query(query, (err, res) => {
+          if (err) reject(err);
+          else resolve(res);
+      })
+  });
+
+  try {
+      let maxVisions = await returnMaxVisions;
+      return res.send({
+          status: STATUS_CODE.SUCCESS,
+          result: {list: maxVisions}
+      });
+  } catch (error) {
+      return res.send({status: STATUS_CODE.ERROR});
+  }
+};
