@@ -98,10 +98,6 @@ exports.getLogVisionsEvents = async (req, res) =>{
     });
     try {
         const eventsResults = await getEvents;
-        // var eventsArray = [];
-        // for (const result of eventsResults){
-        //     eventsArray.push(result.title);
-        // }
         return res.send({status: STATUS_CODE.SUCCESS, data: eventsResults});
     } catch (e){
         console.log(e);
