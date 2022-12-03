@@ -2,6 +2,12 @@ const connection = require('../models/connection');
 const {STATUS_CODE,SORT_ORDER} = require('../lib/constants');
 const attendanceManager = require('../lib/attendanceHelpers');
 
+/**
+ * the log attendance read view for a particular visions group
+ * @param {Object} req 
+ * @param {Object} res 
+ * @returns the status of the read and the attendance data array 
+ */
 exports.readLogAttendance = async (req, res) => {
     // check req.query parameters: sort
     const sort_list = [req.query.name_sort, req.query.email_sort];
@@ -36,7 +42,7 @@ exports.readLogAttendance = async (req, res) => {
     // pass in array for all search/filtering options
     const name_search = (!req.query.name_search) ? '' : ' name = \'' + JSON.parse(req.query.name_search) + `\' AND `;
     const email_search = (!req.query.email_search) ? '' : ' email = \'' +  JSON.parse(req.query.email_search)  + `\' AND `;
-    const event = (!req.query.event) ? '' : ' title = \'' + JSON.parse(req.query.event) + `\' AND `;
+    const event = (!req.query.event_id) ? '' : ' event_id = \'' + JSON.parse(req.query.event_id) + `\' AND `;
     const visions = ' visions = ' + req.query.visions + ' ';
     //number of rows to calculate pages
     const row_start = (!req.query.row_start) ? 0 : req.query.row_start;
@@ -73,6 +79,12 @@ exports.readLogAttendance = async (req, res) => {
     }
 }
 
+/**
+ * call the edit attendance helper to edit all attendances submitted by a VUceptor
+ * @param {Object} req 
+ * @param {Object} res 
+ * @returns the status of the edits 
+ */
 exports.submit = async (req, res) =>{
     const {edits} = req.body;
     for (const edit of edits){
@@ -87,22 +99,23 @@ exports.submit = async (req, res) =>{
     return res.send({ status: STATUS_CODE.SUCCESS});
 }
 
+/**
+ * Get all events for a particular student from student_events_aggregate database for VUcept to select from 
+ * @param {Object} req 
+ * @param {Object} res 
+ * @returns the status of the operation and the events array all student events
+ */
 exports.getLogVisionsEvents = async (req, res) =>{
-    const visions = req.query.visions;
-    const query = `SELECT DISTINCT title, event_id from student_events WHERE visions = ?`;
+    const query = `SELECT DISTINCT title, event_id from student_events_aggregate`;
     const getEvents = new Promise((resolve, reject) => {
-      connection.query(query, [visions], (err, res) => {
+      connection.query(query, (err, res) => {
         if (err) reject(err);
         else resolve(res);
       })
     });
     try {
-        const eventsResults = await getEvents;
-        // var eventsArray = [];
-        // for (const result of eventsResults){
-        //     eventsArray.push(result.title);
-        // }
-        return res.send({status: STATUS_CODE.SUCCESS, data: eventsResults});
+        const events = await getEvents;
+        return res.send({status: STATUS_CODE.SUCCESS, events});
     } catch (e){
         console.log(e);
         return res.send({status: STATUS_CODE.ERROR});

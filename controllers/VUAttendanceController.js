@@ -1,4 +1,4 @@
-const {STATUS_CODE } = require('../lib/constants');
+const {STATUS_CODE, TYPE } = require('../lib/constants');
 const attendanceManager = require('../lib/attendanceHelpers');
 const actualTableName = `vuceptor_attendance`;
 const bigViewName = `vu_attendance`;
@@ -7,6 +7,9 @@ const bigViewName = `vu_attendance`;
 var currentRead;
 
 exports.readVUAttendance = async (req, res) => {
+    // if (req.user.type != TYPE.ADVISER) {
+    //     return res.send({status : STATUS_CODE.FORBIDDEN})
+    // }
     try {
         const readAttendance = await attendanceManager.readAttendance(req.query, bigViewName);
         //cache most recent read
