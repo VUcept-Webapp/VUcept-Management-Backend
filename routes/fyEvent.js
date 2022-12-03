@@ -10,5 +10,6 @@ routerfyEvent.post('/deletefyEvent', fyEventController.deletefyEvent);
 routerfyEvent.post('/resetfyEvent', fyEventController.resetfyEvent);
 routerfyEvent.post('/fyVisionsEventLoadfromcsv', fyEventController.fyVisionsEventLoadfromcsv);
 routerfyEvent.post('/fyVisionsInfoLoadfromcsv', fyEventController.fyVisionsInfoLoadfromcsv);
+routerfyEvent.get('/visionsEntered', fyEventController.visionsEntered);
 
 module.exports = routerfyEvent;

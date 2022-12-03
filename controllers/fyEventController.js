@@ -127,14 +127,14 @@ exports.readfyEvent =  async (req, res) => {
   const timeRange = (!req.query.time_range) ? '' : JSON.parse(req.query.time_range);
   const dateClause =  timeRange  == '' ? '' : ' WHERE (student_events_aggregate.date >= \'' + timeRange[0] + '\' AND student_events_aggregate.date <= \'' + timeRange[1] + '\')';
 
-  var query = ' SELECT student_events_aggregate.event_id, student_events_aggregate.title, student_events_aggregate.description, student_events_aggregate.date, visions_info.start_time, visions_info.end_time, visions_info.location, visions_info.offset' + 
+  var query = ' SELECT student_events_aggregate.event_id, student_events_aggregate.title, student_events_aggregate.description, student_events_aggregate.date, visions_info.start_time, visions_info.end_time, visions_info.location, visions_info.offset, 0 as is_common' + 
               ' FROM mydb.student_events_aggregate ' + 
               ' CROSS JOIN mydb.visions_info ' +
               dateClause + 
               ' AND visions_info.visions = ' + req.query.visions + 
               ' AND student_events_aggregate.is_common = 0' + 
               ' UNION ' +
-              ' SELECT student_events_aggregate.event_id, student_events_aggregate.title, student_events_aggregate.description, student_events_aggregate.date, common_events.start_time, common_events.end_time, common_events.location, 0 as offset ' +
+              ' SELECT student_events_aggregate.event_id, student_events_aggregate.title, student_events_aggregate.description, student_events_aggregate.date, common_events.start_time, common_events.end_time, common_events.location, 0 as offset, 1 as is_common' +
               ' FROM mydb.student_events_aggregate ' +
               ' JOIN mydb.common_events ON common_events.event_id = student_events_aggregate.event_id ' +
               dateClause + 
@@ -194,6 +194,8 @@ exports.createfyEvent =  async (req, res) => {
 exports.updatefyEvent =  async (req, res) => {
   const {title, date, description, is_common, visions, start_time, location, end_time, day, event_id} = req.body;
 
+  let offset = eventHelpers.findOffset(day);
+  
   try {
       if (start_time > end_time){
         return res.send({ status: STATUS_CODE.INVALID_START_END_TIMES });
@@ -271,6 +273,7 @@ exports.fyVisionsEventLoadfromcsv = async (req, res) => {
 exports.fyVisionsInfoLoadfromcsv = async (req, res) => {
   const {file} = req.body;
   var invalid_time = [];
+  var duplicate_visions = [];
 
   // Fetching the data from each row
   // and inserting to the table
@@ -284,8 +287,12 @@ exports.fyVisionsInfoLoadfromcsv = async (req, res) => {
       var offset = eventHelpers.findOffset(day);
 
       try {
+        let verifyVisions = await eventHelpers.verifyVisions(visions);
+
         if (start_time > end_time){
           invalid_time.push(visions);
+        } else if (verifyVisions.NUM != 0) {
+          duplicate_visions.push(visions);
         } else {
           await this.addVisionsInfo({visions, day, start_time, end_time, location, offset});
         }
@@ -297,6 +304,27 @@ exports.fyVisionsInfoLoadfromcsv = async (req, res) => {
   if (invalid_time.length == 0) {
     return res.send({status: STATUS_CODE.SUCCESS});
   } else {
-    return res.send({status: STATUS_CODE.INVALID_START_END_TIMES, result: invalid_time});
+    return res.send({status: STATUS_CODE.INVALID_START_END_TIMES, result: {invalid_time, duplicate_visions}});
   }
 }
+
+exports.visionsEntered = async (req, res) => {
+  const query = 'SELECT visions FROM visions_info ORDER BY visions ASC';
+
+  const returnMaxVisions = new Promise((resolve, reject) => {
+      connection.query(query, (err, res) => {
+          if (err) reject(err);
+          else resolve(res);
+      })
+  });
+
+  try {
+      let maxVisions = await returnMaxVisions;
+      return res.send({
+          status: STATUS_CODE.SUCCESS,
+          result: {list: maxVisions}
+      });
+  } catch (error) {
+      return res.send({status: STATUS_CODE.ERROR});
+  }
+};
