@@ -7,23 +7,26 @@ const jwt = require('jsonwebtoken');
 
 /**
  * Generate the access token for login and signup 
- * @param {Object} user 
+ * @param {Object} type - user type
  * @returns the access token string
  */
-const generateAccessToken = (user) => {
-  return jwt.sign(user, process.env.ACCESS_TOKEN_SECRET,
+const generateAccessToken = (type) => {
+  return jwt.sign(type, process.env.ACCESS_TOKEN_SECRET,
   {
     expiresIn: '30m'
   });
 }
 
 /**
- * the refresh token for login and signup; it has no expiration as we need to handle it manually
- * @param {Object} user 
+ * the refresh token for login and signup; it has an expiration date of three days 
+ * @param {Object} type user type
  * @returns the refresh token string
  */
-const generateRefreshToken = (user) => {
-  return jwt.sign(user, process.env.REFRESH_TOKEN_SECRET);
+const generateRefreshToken = (type) => {
+  return jwt.sign(type, process.env.REFRESH_TOKEN_SECRET,
+    {
+      expiresIn: '3d'
+    });
 }
 
 /**
@@ -34,7 +37,7 @@ const generateRefreshToken = (user) => {
  */
 const authenticateUser = async (email, password) =>{
   try {
-    const checkResult = await checkUser(email.toLowerCase());
+    const checkResult = await checkUser(email);
     if (checkResult.length === 0) {
       return ({status: STATUS_CODE.INCORRECT_USER_EMAIL});
     }
@@ -75,7 +78,7 @@ const storeToken = (token) =>{
 }
 
 /**
- * delete a refresh token fron the db
+ * delete a refresh token from the db
  * @param {string} token 
  * @returns Promise
  */
@@ -87,6 +90,46 @@ const deleteToken = (token) =>{
       else resolve(res);
     })
   });
+}
+
+/**
+ * find a refresh token from the db
+ * @param {string} token 
+ * @returns Promise
+ */
+ const findToken = (token) =>{
+  const query = "SELECT COUNT(*) FROM tokens WHERE token = ?";
+  return new Promise((resolve, reject) => {
+    connection.query(query, token, (err, res) => {
+      if (err) reject(err);
+      else resolve(res);
+    })
+  });
+}
+
+/**
+ * generate a new access token according to the refresh token passed in by frontend 
+ * @param {Object} req 
+ * @param {Object} res 
+ * @returns the status of the operation and the new access token 
+ */
+exports.getAccessToken = async (req, res) => {
+  const refreshToken = req.body.token;
+  if (!refreshToken) return res.send({status: STATUS_CODE.NO_TOKEN});
+  try {
+    const tokenResult = await findToken(refreshToken);
+    //the refresh token is not in the database 
+    if (tokenResult === 0) return res.send({status: STATUS_CODE.NOT_VALID_TOKEN});
+    //verify the refresh token 
+    jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, type) =>{
+      if (err) return res.send({status: STATUS_CODE.NOT_VALID_TOKEN});
+      const newToken = generateAccessToken(type);
+      return res.send({status: STATUS_CODE.SUCCESS, token: newToken});
+    })
+  } catch (e) {
+    console.log(e);
+    return res.send({status: STATUS_CODE.ERROR});
+  }
 }
 
 /**
@@ -104,12 +147,12 @@ exports.login = async (req, res) => {
       return res.send(authResult);
     } else {
       const user = authResult.user;
-      //generate tokens for authorized users 
-      const accessToken = generateAccessToken(user);
-      const refreshToken = generateRefreshToken(user);
+      //generate tokens for authorized users; the token only remembers the user type 
+      const accessToken = generateAccessToken({type: user.type});
+      const refreshToken = generateRefreshToken({type: user.type});
       //store the refresh token in the db 
       try {
-        storeToken(refreshToken);
+        await storeToken(refreshToken);
       } catch (e){
         console.log(e);
         return res.send({status: STATUS_CODE.ERROR});
@@ -253,7 +296,7 @@ async function changePassword (password, email) {
  * @param {string} salt 
  * @returns the hashed password string
  */
-const  hashPassword = (password, salt) => {
+const hashPassword = (password, salt) => {
     // Hashing user's salt and password with 1000 iterations, 
     hash = crypto.pbkdf2Sync(password, salt, 1000, 64, `sha512`).toString(`hex`); 
     return hash;
@@ -267,7 +310,7 @@ const  hashPassword = (password, salt) => {
 exports.signOut = async (req, res) => {
   const token = req.body.refreshToken;
   try {
-    deleteToken(token);
+    await deleteToken(token);
     return res.send({status : STATUS_CODE.SUCCESS});
   } catch (e){
     return res.send({status: STATUS_CODE.ERROR});
@@ -285,9 +328,9 @@ exports.authenticateToken = (req, res, next) =>{
   const token = authHeader && authHeader.split(' ')[1];
   if (!token) return res.send({status: STATUS_CODE.NO_TOKEN});
 
-  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, user) =>{
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, type) =>{
     if (err) return res.send({status: STATUS_CODE.NOT_VALID_TOKEN});
-    req.user = user;
+    req.type = type;
     next();
   })
 }
