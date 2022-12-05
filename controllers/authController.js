@@ -329,8 +329,8 @@ exports.authenticateToken = (req, res, next) =>{
   if (!token) return res.send({status: STATUS_CODE.NO_TOKEN});
 
   jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, type) =>{
-    if (err) return res.send({status: STATUS_CODE.NOT_VALID_TOKEN});
-    req.type = type;
+    if (err) return res.send({status: STATUS_CODE.NOT_VALID_TOKEN})
+    req.type = type.type;
     next();
   })
 }
