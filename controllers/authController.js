@@ -10,10 +10,15 @@ const jwt = require('jsonwebtoken');
  * @param {Object} type - user type
  * @returns the access token string
  */
-const generateAccessToken = (type) => {
-  console.log(type)
-  const userType = {type: type.type};
-  return jwt.sign(userType, process.env.ACCESS_TOKEN_SECRET,
+const generateAccessToken = (user) => {
+  //only get the type field from the user object
+  const newUser = {
+    email: user.email,
+    name: user.name,
+    visions: user.visions,
+    type: user.type
+  };
+  return jwt.sign(newUser, process.env.ACCESS_TOKEN_SECRET,
   {
     expiresIn: '30m'
   });
@@ -24,10 +29,15 @@ const generateAccessToken = (type) => {
  * @param {Object} type user type
  * @returns the refresh token string
  */
-const generateRefreshToken = (type) => {
-  console.log(type)
-  const userType = {type: type.type};
-  return jwt.sign(userType, process.env.REFRESH_TOKEN_SECRET,
+const generateRefreshToken = (user) => {
+  //only get the type field from the user object
+  const newUser = {
+    email: user.email,
+    name: user.name,
+    visions: user.visions,
+    type: user.type
+  };
+  return jwt.sign(newUser, process.env.REFRESH_TOKEN_SECRET,
     {
       expiresIn: '3d'
     });
@@ -125,9 +135,14 @@ exports.getAccessToken = async (req, res) => {
     //the refresh token is not in the database 
     if (tokenResult === 0) return res.send({status: STATUS_CODE.NOT_VALID_TOKEN});
     //verify the refresh token 
-    jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, type) =>{
+    jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, user) =>{
       if (err) return res.send({status: STATUS_CODE.NOT_VALID_TOKEN});
-      const newToken = generateAccessToken(type);
+      const newToken = generateAccessToken({
+        email: user.email,
+        name: user.name,
+        visions: user.visions,
+        type: user.type
+      });
       return res.send({status: STATUS_CODE.SUCCESS, token: newToken});
     })
   } catch (e) {
@@ -151,9 +166,9 @@ exports.login = async (req, res) => {
       return res.send(authResult);
     } else {
       const user = authResult.user;
-      //generate tokens for authorized users; the token only remembers the user type 
-      const accessToken = generateAccessToken({type: user.type});
-      const refreshToken = generateRefreshToken({type: user.type});
+      //generate tokens for authorized users;
+      const accessToken = generateAccessToken(user);
+      const refreshToken = generateRefreshToken(user);
       //store the refresh token in the db 
       try {
         await storeToken(refreshToken);
@@ -332,9 +347,33 @@ exports.authenticateToken = (req, res, next) =>{
   const token = authHeader && authHeader.split(' ')[1];
   if (!token) return res.send({status: STATUS_CODE.NO_TOKEN});
 
-  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, type) =>{
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, user) =>{
     if (err) return res.send({status: STATUS_CODE.NOT_VALID_TOKEN})
-    req.type = type.type;
+    req.type = user.type;
     next();
   })
+}
+
+/**
+ * get user information from an access token
+ * @param {Object} req 
+ * @param {Object} res 
+ */
+exports.getUserFromToken = (req, res) =>{
+  const token = req.query.token;
+  try {
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, user) =>{
+      if (err) return res.send({status: STATUS_CODE.NOT_VALID_TOKEN})
+      const newUser =  {
+        email: user.email,
+        name: user.name,
+        visions: user.visions,
+        type: user.type
+      };
+      return res.send({status: STATUS_CODE.SUCCESS, user: newUser});
+    })
+  } catch (e){
+    console.log(e);
+    return res.send({status: STATUS_CODE.ERROR})
+  }
 }

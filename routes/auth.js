@@ -9,5 +9,6 @@ routerAuth.post('/signUp', authController.signUp);
 routerAuth.post('/signOut', authController.signOut);
 routerAuth.post('/changePassword', authController.changePassword);
 routerAuth.post('/getAccessToken', authController.getAccessToken);
+routerAuth.get('/getUserFromToken', authController.getUserFromToken);
 
 module.exports = routerAuth;
