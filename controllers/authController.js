@@ -11,7 +11,9 @@ const jwt = require('jsonwebtoken');
  * @returns the access token string
  */
 const generateAccessToken = (type) => {
-  return jwt.sign(type, process.env.ACCESS_TOKEN_SECRET,
+  console.log(type)
+  const userType = {type: type.type};
+  return jwt.sign(userType, process.env.ACCESS_TOKEN_SECRET,
   {
     expiresIn: '30m'
   });
@@ -23,7 +25,9 @@ const generateAccessToken = (type) => {
  * @returns the refresh token string
  */
 const generateRefreshToken = (type) => {
-  return jwt.sign(type, process.env.REFRESH_TOKEN_SECRET,
+  console.log(type)
+  const userType = {type: type.type};
+  return jwt.sign(userType, process.env.REFRESH_TOKEN_SECRET,
     {
       expiresIn: '3d'
     });
