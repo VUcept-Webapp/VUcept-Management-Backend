@@ -7,8 +7,7 @@ This is the backend code base for VUcept Management project
 Language: Node.js
 Reqeust Handling: Express
 
-## Deployment
-
+## Deployment Local
 1. Make sure that you are using the correct versions, and below dependencies are added into package.json<br/>
     express: 4.18.1<br/>
     aws-sdk: latest<br/>
@@ -18,10 +17,17 @@ Reqeust Handling: Express
     express: 4.18.1<br/>
     mysql: latest (if this doesn't work, use mysql2)<br/>
     nodemon: 2.0.20
-2. npm install
-3. node index.js
-// change to server.js
+2. npm install<br/>
+3. node index.js<br/>
+
 
 ## Test suite
-1. npm i -D jest supertest
-2. npm run test
+1. create local database and add below variables to .env file. Ensure TEST_STATUS=1.<br/>
+    LOCAL_HOSTNAME=<br/>
+    LOCAL_PORT=<br/>
+    LOCAL_USERNAME=<br/>
+    LOCAL_PASSWORD=<br/>
+    LOCAL_DATABASE=<br/>
+    TEST_STATUS=1<br/>
+2. npm i -D jest supertest<br/>
+3. npm run test

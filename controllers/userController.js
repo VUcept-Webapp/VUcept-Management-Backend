@@ -75,7 +75,7 @@ exports.editUser = ({old_email, email, name, type, visions}) => {
 
 //reset the user table
 exports.resetUsers = async (req, res) => {
-    const query = 'DELETE FROM mydb.users WHERE (type = \'' + TYPE.BOARD + '\' OR type = \'' + TYPE.VUCEPTOR + '\');';
+    const query = 'DELETE FROM users WHERE (type = \'' + TYPE.BOARD + '\' OR type = \'' + TYPE.VUCEPTOR + '\');';
 
     const reset = new Promise((resolve, reject) => {
         connection.query(query, (err, res) => {

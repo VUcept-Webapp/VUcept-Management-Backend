@@ -128,15 +128,15 @@ exports.readfyEvent =  async (req, res) => {
   const dateClause =  timeRange  == '' ? '' : ' WHERE (student_events_aggregate.date >= \'' + timeRange[0] + '\' AND student_events_aggregate.date <= \'' + timeRange[1] + '\')';
 
   var query = ' SELECT student_events_aggregate.event_id, student_events_aggregate.title, student_events_aggregate.description, student_events_aggregate.date, visions_info.start_time, visions_info.end_time, visions_info.location, visions_info.offset, 0 as is_common' + 
-              ' FROM mydb.student_events_aggregate ' + 
-              ' CROSS JOIN mydb.visions_info ' +
+              ' FROM student_events_aggregate ' + 
+              ' CROSS JOIN visions_info ' +
               dateClause + 
               ' AND visions_info.visions = ' + req.query.visions + 
               ' AND student_events_aggregate.is_common = 0' + 
               ' UNION ' +
               ' SELECT student_events_aggregate.event_id, student_events_aggregate.title, student_events_aggregate.description, student_events_aggregate.date, common_events.start_time, common_events.end_time, common_events.location, 0 as offset, 1 as is_common' +
-              ' FROM mydb.student_events_aggregate ' +
-              ' JOIN mydb.common_events ON common_events.event_id = student_events_aggregate.event_id ' +
+              ' FROM student_events_aggregate ' +
+              ' JOIN common_events ON common_events.event_id = student_events_aggregate.event_id ' +
               dateClause + 
               ' AND student_events_aggregate.is_common = 1';
 
