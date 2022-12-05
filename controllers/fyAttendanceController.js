@@ -15,7 +15,6 @@ var currentRead;
  */
 exports.sendAdviserWeeklyReport = async (req, res) =>{
     if (req.type != TYPE.ADVISER)  {
-        console.log(req.type)
         return res.send({status : STATUS_CODE.FORBIDDEN})
     }
     try {
@@ -162,7 +161,7 @@ exports.getFyAttendanceVisionsList =  async (req, res) => {
  * @returns the available first-year events in the system
  */
 exports.getFyAttendanceEventsList =  async (req, res) => {
-    if (req.type != TYPE.ADVISER )  {
+    if (req.type != TYPE.ADVISER)  {
         console.log(req.type)
         return res.send({status : STATUS_CODE.FORBIDDEN})
     }
