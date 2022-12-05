@@ -301,10 +301,14 @@ exports.fyVisionsInfoLoadfromcsv = async (req, res) => {
       }
   }
 
-  if (invalid_time.length == 0) {
+  if ((invalid_time.length == 0) && (duplicate_visions == 0)){
     return res.send({status: STATUS_CODE.SUCCESS});
+  } else if (invalid_time.length != 0){
+    return res.send({status: STATUS_CODE.INVALID_START_END_TIMES, result: {invalid_time}});
+  } else if (duplicate_visions != 0){
+    return res.send({status: STATUS_CODE.VISIONS_EXIST, result: {duplicate_visions}});
   } else {
-    return res.send({status: STATUS_CODE.INVALID_START_END_TIMES, result: {invalid_time, duplicate_visions}});
+    return res.send({status: STATUS_CODE.ERROR});
   }
 }
 

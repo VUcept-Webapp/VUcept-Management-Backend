@@ -24,3 +24,4 @@ Reqeust Handling: Express
 
 ## Test suite
 1. npm i -D jest supertest
+2. npm run test
