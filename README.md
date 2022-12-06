@@ -30,4 +30,6 @@ Reqeust Handling: Express
     LOCAL_DATABASE=<br/>
     TEST_STATUS=1<br/>
 2. npm i -D jest supertest<br/>
-3. npm run test
+3. npm run test<br/><br/>
+Note: Please run unit tests one at a time, as the API calls would make changes to the database
+which may lead failed tests otherwise. Moreover, please follow instructions within each test file, reagarding status of the database prior to running the tests.
