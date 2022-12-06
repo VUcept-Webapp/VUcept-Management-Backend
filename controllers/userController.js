@@ -94,6 +94,9 @@ exports.resetUsers = async (req, res) => {
 
 //load with csv file
 exports.userLoadfromcsv = async (req, res) => {
+    if (req.type != TYPE.ADVISER)  {
+        return res.send({status : STATUS_CODE.FORBIDDEN})
+    }
     const {file} = req.body;
     var duplicates = [];
 
@@ -126,6 +129,9 @@ exports.userLoadfromcsv = async (req, res) => {
 
 //add one user
 exports.createUser = async (req, res) => {
+    if (req.type != TYPE.ADVISER)  {
+        return res.send({status : STATUS_CODE.FORBIDDEN})
+    }
     const {email, name, type, visions} = req.body;
 
     if ((type != TYPE.ADVISER) && (type != TYPE.BOARD) && (type != TYPE.VUCEPTOR)){
@@ -152,6 +158,9 @@ exports.createUser = async (req, res) => {
 
 //edit one user
 exports.updateUser = async (req, res) => {
+    if (req.type != TYPE.ADVISER)  {
+        return res.send({status : STATUS_CODE.FORBIDDEN})
+    }
     const {old_email, email, name, type, visions} = req.body;
 
     try {
@@ -165,6 +174,9 @@ exports.updateUser = async (req, res) => {
 
 //delete one user
 exports.deleteUser = async (req, res) => {
+    if (req.type != TYPE.ADVISER)  {
+        return res.send({status : STATUS_CODE.FORBIDDEN})
+    }
     try {
         const email = req.body.email;
         let verify = await this.verifyUser(email);
@@ -188,6 +200,9 @@ exports.deleteUser = async (req, res) => {
 
 //get all first year students, return a json object
 exports.readUser = async (req, res) => {
+    if (req.type != TYPE.ADVISER)  {
+        return res.send({status : STATUS_CODE.FORBIDDEN})
+    }
     const name_sort = (!req.query.name_sort) ? '' : ' name ' + req.query.name_sort;
     const email_sort = (!req.query.email_sort) ? '' : ' email ' + req.query.email_sort;
     const visions_sort = (!req.query.visions_sort) ? '' : ' visions ' + req.query.visions_sort;
