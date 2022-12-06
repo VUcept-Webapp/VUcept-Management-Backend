@@ -1,9 +1,22 @@
 const { STATUS_CODE } = require('../lib/constants');
 const request = require('supertest');
 const app = require("../index.js");
+const jwt = require('jsonwebtoken');
 
 // Please ensure the entire database is empty
 describe('Routes for Fy Events - Home Screen', () => {
+    const generateAccessToken = (user) => {
+        return jwt.sign(user, process.env.ACCESS_TOKEN_SECRET,
+        {
+          expiresIn: '30m'
+        });
+    }
+    const adviserAccessToken = generateAccessToken({
+        name: "user",  
+        email: "user@vanderblit.edu",  
+        visions: 0, 
+        type: "adviser"
+    });
     // routerfyEvent.post('/fyVisionsInfoLoadfromcsv', fyEventController.fyVisionsInfoLoadfromcsv);
     test('responds to /fyVisionsInfoLoadfromcsv', async () => {
         const body = {
@@ -87,7 +100,7 @@ describe('Routes for Fy Events - Home Screen', () => {
             "end_time": "10:00",
             "location": "commons233"
         };
-        const res = await request(app).post('/createfyEvent').send.set("Authorization", "Bearer " + adviserAccessToken);
+        const res = await request(app).post('/createfyEvent').send(body).set("Authorization", "Bearer " + adviserAccessToken);
         expect(res.body.status).toEqual(STATUS_CODE.SUCCESS);
     });
 

@@ -34,6 +34,6 @@ app.use('/', fyEventRoute);
 
 //comment out port for tests so that they can choose free ports to run on;
 //in production, it should be 8080
-// app.listen(port, () => console.log(`Listening on port ${port}`));
+app.listen(port, () => console.log(`Listening on port ${port}`));
 
 module.exports = app;

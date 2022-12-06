@@ -2,9 +2,22 @@ const { STATUS_CODE } = require('../lib/constants');
 const { ascReturnResult, descReturnResult, emptyReturnResult, origReturnResult} = require('../lib/test_constants');
 const request = require('supertest');
 const app = require("../index.js");
+const jwt = require('jsonwebtoken');
 
 // Please ensure the entire database is empty
 describe('Routes for User Management Screen', () => {
+    const generateAccessToken = (user) => {
+        return jwt.sign(user, process.env.ACCESS_TOKEN_SECRET,
+        {
+          expiresIn: '30m'
+        });
+    }
+    const adviserAccessToken = generateAccessToken({
+        name: "user",  
+        email: "user@vanderblit.edu",  
+        visions: 0, 
+        type: "adviser"
+    });
 
     // routerUser.post('/userLoadfromcsv', userController.userLoadfromcsv);
     test('responds to /userLoadfromcsv', async () => {
@@ -101,7 +114,7 @@ describe('Routes for User Management Screen', () => {
             "email_sort": "DESC",
             "condition_order": "[\"email_sort\"]"
         };
-        const res = await request(app).get('/readUser').query(queryParam);
+        const res = await request(app).get('/readUser').query(queryParam).set("Authorization", "Bearer " + adviserAccessToken);
         expect(res.body.status).toEqual(STATUS_CODE.SUCCESS);
         expect(res.body.result).toEqual(descReturnResult);
     });

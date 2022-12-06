@@ -2,10 +2,22 @@ const { STATUS_CODE } = require('../lib/constants');
 const { emptyReturnResult, fyOrigReturnResult, ascfyReturnResult } = require('../lib/test_constants');
 const request = require('supertest');
 const app = require("../index.js");
+const jwt = require('jsonwebtoken');
 
 // Please ensure the entire database is empty
 describe('Routes for Visions Assignment Screen', () => {
-
+    const generateAccessToken = (user) => {
+        return jwt.sign(user, process.env.ACCESS_TOKEN_SECRET,
+        {
+          expiresIn: '30m'
+        });
+    }
+    const adviserAccessToken = generateAccessToken({
+        name: "user",  
+        email: "user@vanderblit.edu",  
+        visions: 0, 
+        type: "adviser"
+    });
     // routerFy.post('/fyLoadfromcsv', fyController.fyLoadfromcsv);
     test('responds to /fyLoadfromcsv', async () => {
         const body = {
@@ -22,7 +34,7 @@ describe('Routes for Visions Assignment Screen', () => {
                 }]
         };
 
-        const res = await request(app).post('/fyLoadfromcsv').send(body).set("Authorization", "Bearer " + adviserAccessToken);
+        const res = await request(app).post('/fyLoadfromcsv').set("Authorization", "Bearer " + adviserAccessToken).send(body);
         expect(res.body.status).toEqual(STATUS_CODE.SUCCESS);
     });
 
@@ -35,7 +47,7 @@ describe('Routes for Visions Assignment Screen', () => {
                 "visions": 20
                 }]
         };
-        const res = await request(app).post('/fyLoadfromcsv').send(body).set("Authorization", "Bearer " + adviserAccessToken);
+        const res = await request(app).post('/fyLoadfromcsv').set("Authorization", "Bearer " + adviserAccessToken).send(body);
         expect(res.body.status).toEqual(STATUS_CODE.EMAIL_USED);
         expect(res.body.result).toEqual(['test002@vanderbilt.edu']);
     });
@@ -47,7 +59,7 @@ describe('Routes for Visions Assignment Screen', () => {
             "name": "test005",
             "visions": 5
         };
-        const res = await request(app).post('/createFy').send.set("Authorization", "Bearer " + adviserAccessToken);
+        const res = await request(app).post('/createFy').set("Authorization", "Bearer " + adviserAccessToken).send(body);
         expect(res.body.status).toEqual(STATUS_CODE.SUCCESS);
     });
 
@@ -57,7 +69,7 @@ describe('Routes for Visions Assignment Screen', () => {
             "name": 'test050',
             "visions": 15
         };
-        const res = await request(app).post('/createFy').send(body).set("Authorization", "Bearer " + adviserAccessToken);
+        const res = await request(app).post('/createFy').set("Authorization", "Bearer " + adviserAccessToken).send(body);
         expect(res.body.status).toEqual(STATUS_CODE.EMAIL_USED);
     });
 
@@ -156,20 +168,20 @@ describe('Routes for Visions Assignment Screen', () => {
             "name": "test010",
             "visions": 10
         };
-        const res = await request(app).post('/updateFy').send(body).set("Authorization", "Bearer " + adviserAccessToken);
+        const res = await request(app).post('/updateFy').set("Authorization", "Bearer " + adviserAccessToken).send(body);
         expect(res.body.status).toEqual(STATUS_CODE.SUCCESS);
     });
 
     // routerFy.post('/deleteFy', fyController.deleteFy);
     test('responds to /deleteFy', async () => {
         const body = {"email": "test002@vanderbilt.edu"};
-        const res = await request(app).post('/deleteFy').send(body).set("Authorization", "Bearer " + adviserAccessToken);
+        const res = await request(app).post('/deleteFy').set("Authorization", "Bearer " + adviserAccessToken).send(body);
         expect(res.body.status).toEqual(STATUS_CODE.SUCCESS);
     });
 
     test('responds to /deleteFy: user does not exist', async () => {
         const body = {"email": 'test111@vanderbilt.edu'};
-        const res = await request(app).post('/deleteFy').send(body).set("Authorization", "Bearer " + adviserAccessToken);
+        const res = await request(app).post('/deleteFy').set("Authorization", "Bearer " + adviserAccessToken).send(body);
         expect(res.body.status).toEqual(STATUS_CODE.INCORRECT_STUDENT_EMAIL);
         expect(res.body.result).toEqual('test111@vanderbilt.edu');
     });

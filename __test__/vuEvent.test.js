@@ -1,9 +1,23 @@
 const { STATUS_CODE } = require('../lib/constants');
 const request = require('supertest');
 const app = require("../index.js");
+const jwt = require('jsonwebtoken');
 
 // Please ensure the entire database is empty
 describe('Routes for VUceptor Events - Home Screen', () => {
+    const generateAccessToken = (user) => {
+        return jwt.sign(user, process.env.ACCESS_TOKEN_SECRET,
+        {
+          expiresIn: '30m'
+        });
+    }
+    const adviserAccessToken = generateAccessToken({
+        name: "user",  
+        email: "user@vanderblit.edu",  
+        visions: 0, 
+        type: "adviser"
+    });
+
     // routerVUEvent.post('/VUEventLoadfromcsv', VUEventController.VUEventLoadfromcsv);
     test('responds to /VUEventLoadfromcsv', async () => {
         const body = {
