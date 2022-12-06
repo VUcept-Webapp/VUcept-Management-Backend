@@ -63,7 +63,7 @@ describe('Routes for Visions Assignment Screen', () => {
 
     // routerFy.get('/readFy', fyController.readFy);
     test('responds to /readFy', async () => {
-        const res = await request(app).get('/readFy');
+        const res = await request(app).get('/readFy').set("Authorization", "Bearer " + adviserAccessToken);
         expect(res.body.status).toEqual(STATUS_CODE.SUCCESS);
         expect(res.body.result).toEqual(fyOrigReturnResult);
     });
@@ -73,7 +73,7 @@ describe('Routes for Visions Assignment Screen', () => {
             "name_sort": "ASC",
             "condition_order": "[\"name_sort\"]"
         };
-        const res = await request(app).get('/readFy').query(queryParam);
+        const res = await request(app).get('/readFy').query(queryParam).set("Authorization", "Bearer " + adviserAccessToken);
         expect(res.body.status).toEqual(STATUS_CODE.SUCCESS);
         expect(res.body.result).toEqual(ascfyReturnResult);
     });
@@ -83,7 +83,7 @@ describe('Routes for Visions Assignment Screen', () => {
             "visions_sort": "ASC",
             "condition_order": "[\"visions_sort\"]"
         };
-        const res = await request(app).get('/readFy').query(queryParam);
+        const res = await request(app).get('/readFy').query(queryParam).set("Authorization", "Bearer " + adviserAccessToken);
         expect(res.body.status).toEqual(STATUS_CODE.SUCCESS);
         expect(res.body.result).toEqual(ascfyReturnResult);
     });
@@ -94,14 +94,14 @@ describe('Routes for Visions Assignment Screen', () => {
             "email_sort": "DESC",
             "condition_order": "[\"name_sort\", \"email_sort\"]"
         };
-        const res = await request(app).get('/readFy').query(queryParam);
+        const res = await request(app).get('/readFy').query(queryParam).set("Authorization", "Bearer " + adviserAccessToken);
         expect(res.body.status).toEqual(STATUS_CODE.SUCCESS);
         expect(res.body.result).toEqual(ascfyReturnResult);
     });
 
     test('responds to /readFy: name_search', async () => {
         const queryParam = {"name_search": "[\"test001\"]"};
-        const res = await request(app).get('/readFy').query(queryParam);
+        const res = await request(app).get('/readFy').query(queryParam).set("Authorization", "Bearer " + adviserAccessToken);
         expect(res.body.status).toEqual(STATUS_CODE.SUCCESS);
         const returnResult = {
             "rows": [
@@ -119,14 +119,14 @@ describe('Routes for Visions Assignment Screen', () => {
 
     test('responds to /readFy: email_search', async () => {
         const queryParam = {"email_search": "[\"test111@gmail.com\"]"};
-        const res = await request(app).get('/readFy').query(queryParam);
+        const res = await request(app).get('/readFy').query(queryParam).set("Authorization", "Bearer " + adviserAccessToken);
         expect(res.body.status).toEqual(STATUS_CODE.SUCCESS);
         expect(res.body.result).toEqual(emptyReturnResult);
     });
 
     test('responds to /readFy: visions_filter', async () => {
         const queryParam = {"visions_filter": "[1, 2]"};
-        const res = await request(app).get('/readFy').query(queryParam);
+        const res = await request(app).get('/readFy').query(queryParam).set("Authorization", "Bearer " + adviserAccessToken);
         expect(res.body.status).toEqual(STATUS_CODE.SUCCESS);
         const returnResult = {
             "rows": [
@@ -176,7 +176,7 @@ describe('Routes for Visions Assignment Screen', () => {
 
     // routerFy.get('/fyVisionsNums', fyController.fyVisionsNums);
     test('responds to /fyVisionsNums', async () => {
-        const res = await request(app).get('/fyVisionsNums');
+        const res = await request(app).get('/fyVisionsNums').set("Authorization", "Bearer " + adviserAccessToken);
         expect(res.body.status).toEqual(STATUS_CODE.SUCCESS);
         const returnResult = {
             "list": [
@@ -193,13 +193,13 @@ describe('Routes for Visions Assignment Screen', () => {
 
     // routerFy.post('/resetFy', fyController.resetFy);
     test('responds to /resetFy', async () => {
-        const res = await request(app).post('/resetFy');
+        const res = await request(app).post('/resetFy').set("Authorization", "Bearer " + adviserAccessToken);
         expect(res.body.status).toEqual(STATUS_CODE.SUCCESS);
     });
 
     // routerFy.get('/readFy', fyController.readFy);
     test('responds to /readFy: check if user table is empty', async () => {
-        const res = await request(app).get('/readFy');
+        const res = await request(app).get('/readFy').set("Authorization", "Bearer " + adviserAccessToken);
         expect(res.body.status).toEqual(STATUS_CODE.SUCCESS);
         expect(res.body.result).toEqual(emptyReturnResult);
     });

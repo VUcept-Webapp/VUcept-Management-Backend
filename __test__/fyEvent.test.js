@@ -115,7 +115,7 @@ describe('Routes for Fy Events - Home Screen', () => {
             "time_range": "[\"2011-10-10\", \"2022-12-31\"]",
             "visions": 1
         };
-        const res = await request(app).get('/readfyEvent').query(queryParam);
+        const res = await request(app).get('/readfyEvent').query(queryParam).set("Authorization", "Bearer " + adviserAccessToken);
         expect(res.body.status).toEqual(STATUS_CODE.SUCCESS);
     });
 
@@ -128,7 +128,7 @@ describe('Routes for Fy Events - Home Screen', () => {
 
     // routerfyEvent.get('/visionsEntered', fyEventController.visionsEntered);
     test('responds to /visionsEntered', async () => {
-        const res = await request(app).get('/visionsEntered');
+        const res = await request(app).get('/visionsEntered').set("Authorization", "Bearer " + adviserAccessToken);
         expect(res.body.status).toEqual(STATUS_CODE.SUCCESS);
         const returnResult = {
             "list": [
@@ -145,7 +145,7 @@ describe('Routes for Fy Events - Home Screen', () => {
 
     // routerfyEvent.post('/resetfyEvent', fyEventController.resetfyEvent);
     test('responds to /resetfyEvent', async () => {
-        const res = await request(app).post('/resetfyEvent');
+        const res = await request(app).post('/resetfyEvent').set("Authorization", "Bearer " + adviserAccessToken);
         expect(res.body.status).toEqual(STATUS_CODE.SUCCESS);
     });
 
@@ -155,7 +155,7 @@ describe('Routes for Fy Events - Home Screen', () => {
             "time_range": "[\"2011-10-10\", \"2022-12-31\"]",
             "visions": 1
         };
-        const res = await request(app).get('/readfyEvent').query(queryParam);
+        const res = await request(app).get('/readfyEvent').query(queryParam).set("Authorization", "Bearer " + adviserAccessToken);
         expect(res.body.status).toEqual(STATUS_CODE.SUCCESS);
         expect(res.body.result).toEqual([]);
     });

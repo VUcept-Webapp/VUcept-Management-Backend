@@ -111,7 +111,7 @@ describe('Routes for VUceptor Events - Home Screen', () => {
         const queryParam = {
             "time_range": "[\"2011-10-10\", \"2022-12-31\"]"
         };
-        const res = await request(app).get('/readVUEvent').query(queryParam);
+        const res = await request(app).get('/readVUEvent').query(queryParam).set("Authorization", "Bearer " + adviserAccessToken);
         expect(res.body.status).toEqual(STATUS_CODE.SUCCESS);
     });
 
@@ -124,7 +124,7 @@ describe('Routes for VUceptor Events - Home Screen', () => {
 
     // routerVUEvent.post('/resetVUEvent', VUEventController.resetVUEvent);
     test('responds to /resetVUEvent', async () => {
-        const res = await request(app).post('/resetVUEvent');
+        const res = await request(app).post('/resetVUEvent').set("Authorization", "Bearer " + adviserAccessToken);
         expect(res.body.status).toEqual(STATUS_CODE.SUCCESS);
     });
 
@@ -133,7 +133,7 @@ describe('Routes for VUceptor Events - Home Screen', () => {
         const queryParam = {
             "time_range": "[\"2011-10-10\", \"2022-12-31\"]"
         };
-        const res = await request(app).get('/readVUEvent').query(queryParam);
+        const res = await request(app).get('/readVUEvent').query(queryParam).set("Authorization", "Bearer " + adviserAccessToken);
         expect(res.body.status).toEqual(STATUS_CODE.SUCCESS);
         expect(res.body.result).toEqual([]);
     });
