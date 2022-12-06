@@ -1,6 +1,7 @@
 const connection = require('../models/connection');
 const { STATUS_CODE } = require('../lib/constants');
 const eventHelpers = require('../lib/eventHelpers');
+const e = require('express');
 
 // Shared functions: insertUser
 exports.addVUEvent = ({title, date, start_time, description, location, end_time, mandatory}) => {
@@ -42,6 +43,10 @@ exports.createVUEvent =  async (req, res) => {
     const {title, date, start_time, description, location, end_time, mandatory} = req.body;
     
     try {
+      if (start_time > end_time){
+        return res.send({status: STATUS_CODE.INVALID_START_END_TIMES});
+      }
+
       await this.addVUEvent({title, date, start_time, description, location, end_time, mandatory});
 
       if (mandatory == 1){ // mandatory is true
@@ -64,6 +69,10 @@ exports.updateVUEvent =  async (req, res) => {
   const query = 'UPDATE vuceptor_events SET title = ?, date = ?, start_time = ?, description = ?, location = ?, end_time = ?, mandatory = ? WHERE event_id = ?';
 
   try {
+      if (start_time > end_time){
+        return res.send({status: STATUS_CODE.INVALID_START_END_TIMES});
+      }
+      
       const updateEvent = new Promise((resolve, reject) => {
         connection.query(query, [title, date, start_time, description, location, end_time, mandatory, event_id], (err, res) => {
           if (err) reject(err);
@@ -126,6 +135,7 @@ exports.resetVUEvent = async (req, res) => {
 
 exports.VUEventLoadfromcsv = async (req, res) => {
   const {file} = req.body;
+  var invalid_time = [];
 
   // Fetching the data from each row
   // and inserting to the table
@@ -139,18 +149,26 @@ exports.VUEventLoadfromcsv = async (req, res) => {
       mandatory = file[i]["mandatory"];
 
       try {
-        await this.addVUEvent({title, date, start_time, description, location, end_time, mandatory});
+        if (start_time > end_time){
+          invalid_time.push(title);
+        } else {
+          await this.addVUEvent({title, date, start_time, description, location, end_time, mandatory});
         
-        if (mandatory == 1){
-          let getId = await eventHelpers.getEventId('vuceptor_events');
-          let getAllPerson = await eventHelpers.getAllPersonId('users');
-    
-          await eventHelpers.insertEventAttendance(getId.ID, getAllPerson, 'user_id', 'vuceptor_attendance', 'vuceptor_id');
+          if (mandatory == 1){
+            let getId = await eventHelpers.getEventId('vuceptor_events');
+            let getAllPerson = await eventHelpers.getAllPersonId('users');
+      
+            await eventHelpers.insertEventAttendance(getId.ID, getAllPerson, 'user_id', 'vuceptor_attendance', 'vuceptor_id');
+          }
         }
       } catch (error) {
           return res.send({status: STATUS_CODE.ERROR});
       }
   }
 
-  return res.send({status: STATUS_CODE.SUCCESS});
+  if (invalid_time.length == 0){
+    return res.send({status: STATUS_CODE.SUCCESS});
+  } else{
+    return res.send({status: STATUS_CODE.INVALID_START_END_TIMES, result: {invalid_time}});
+  }
 }
