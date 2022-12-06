@@ -128,15 +128,15 @@ exports.readfyEvent =  async (req, res) => {
   const dateClause =  timeRange  == '' ? '' : ' WHERE (student_events_aggregate.date >= \'' + timeRange[0] + '\' AND student_events_aggregate.date <= \'' + timeRange[1] + '\')';
 
   var query = ' SELECT student_events_aggregate.event_id, student_events_aggregate.title, student_events_aggregate.description, student_events_aggregate.date, visions_info.start_time, visions_info.end_time, visions_info.location, visions_info.offset, 0 as is_common' + 
-              ' FROM mydb.student_events_aggregate ' + 
-              ' CROSS JOIN mydb.visions_info ' +
+              ' FROM student_events_aggregate ' + 
+              ' CROSS JOIN visions_info ' +
               dateClause + 
               ' AND visions_info.visions = ' + req.query.visions + 
               ' AND student_events_aggregate.is_common = 0' + 
               ' UNION ' +
               ' SELECT student_events_aggregate.event_id, student_events_aggregate.title, student_events_aggregate.description, student_events_aggregate.date, common_events.start_time, common_events.end_time, common_events.location, 0 as offset, 1 as is_common' +
-              ' FROM mydb.student_events_aggregate ' +
-              ' JOIN mydb.common_events ON common_events.event_id = student_events_aggregate.event_id ' +
+              ' FROM student_events_aggregate ' +
+              ' JOIN common_events ON common_events.event_id = student_events_aggregate.event_id ' +
               dateClause + 
               ' AND student_events_aggregate.is_common = 1';
 
@@ -301,10 +301,14 @@ exports.fyVisionsInfoLoadfromcsv = async (req, res) => {
       }
   }
 
-  if (invalid_time.length == 0) {
+  if ((invalid_time.length == 0) && (duplicate_visions == 0)){
     return res.send({status: STATUS_CODE.SUCCESS});
+  } else if (invalid_time.length != 0){
+    return res.send({status: STATUS_CODE.INVALID_START_END_TIMES, result: {invalid_time}});
+  } else if (duplicate_visions != 0){
+    return res.send({status: STATUS_CODE.VISIONS_EXIST, result: {duplicate_visions}});
   } else {
-    return res.send({status: STATUS_CODE.INVALID_START_END_TIMES, result: {invalid_time, duplicate_visions}});
+    return res.send({status: STATUS_CODE.ERROR});
   }
 }
 
