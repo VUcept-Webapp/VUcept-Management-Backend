@@ -26,7 +26,7 @@ describe('Routes for VUceptor Events - Home Screen', () => {
                     "mandatory": 0
                 }]
         };
-        const res = await request(app).post('/VUEventLoadfromcsv').send(body);
+        const res = await request(app).post('/VUEventLoadfromcsv').send(body).set("Authorization", "Bearer " + adviserAccessToken);
         expect(res.body.status).toEqual(STATUS_CODE.SUCCESS);
     });
 
@@ -42,7 +42,7 @@ describe('Routes for VUceptor Events - Home Screen', () => {
                 "mandatory": 1
             }]
         };
-        const res = await request(app).post('/VUEventLoadfromcsv').send(body);
+        const res = await request(app).post('/VUEventLoadfromcsv').send(body).set("Authorization", "Bearer " + adviserAccessToken);
         expect(res.body.status).toEqual(STATUS_CODE.INVALID_START_END_TIMES);
     });
 
@@ -57,7 +57,7 @@ describe('Routes for VUceptor Events - Home Screen', () => {
                 "location": "commons233",
                 "mandatory": 1
         };
-        const res = await request(app).post('/createVUEvent').send(body);
+        const res = await request(app).post('/createVUEvent').send(body).set("Authorization", "Bearer " + adviserAccessToken);
         expect(res.body.status).toEqual(STATUS_CODE.SUCCESS);
     });
 
@@ -71,7 +71,7 @@ describe('Routes for VUceptor Events - Home Screen', () => {
                 "location": "commons233",
                 "mandatory": 1
         };
-        const res = await request(app).post('/createVUEvent').send(body);
+        const res = await request(app).post('/createVUEvent').send(body).set("Authorization", "Bearer " + adviserAccessToken);
         expect(res.body.status).toEqual(STATUS_CODE.INVALID_START_END_TIMES);
     });
 
@@ -87,7 +87,7 @@ describe('Routes for VUceptor Events - Home Screen', () => {
             "mandatory": 0,
             "event_id": 1
         };
-        const res = await request(app).post('/updateVUEvent').send(body);
+        const res = await request(app).post('/updateVUEvent').send(body).set("Authorization", "Bearer " + adviserAccessToken);
         expect(res.body.status).toEqual(STATUS_CODE.SUCCESS);
     });
 
@@ -102,7 +102,7 @@ describe('Routes for VUceptor Events - Home Screen', () => {
             "mandatory": 0,
             "event_id": 1
         };
-        const res = await request(app).post('/updateVUEvent').send(body);
+        const res = await request(app).post('/updateVUEvent').send(body).set("Authorization", "Bearer " + adviserAccessToken);
         expect(res.body.status).toEqual(STATUS_CODE.INVALID_START_END_TIMES);
     });
 
@@ -118,7 +118,7 @@ describe('Routes for VUceptor Events - Home Screen', () => {
     // routerVUEvent.post('/deleteVUEvent', VUEventController.deleteVUEvent);
     test('responds to /deleteVUEvent', async () => {
         const body = {"event_id": -1};
-        const res = await request(app).post('/deletefyEvent').send(body);
+        const res = await request(app).post('/deletefyEvent').send(body).set("Authorization", "Bearer " + adviserAccessToken);
         expect(res.body.status).toEqual(STATUS_CODE.INCORRECT_EVENT_ID);
     });
 

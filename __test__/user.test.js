@@ -30,7 +30,7 @@ describe('Routes for User Management Screen', () => {
                 }]
         };
 
-        const res = await request(app).post('/userLoadfromcsv').send(body);
+        const res = await request(app).post('/userLoadfromcsv').send(body).set("Authorization", "Bearer " + adviserAccessToken);
         expect(res.body.status).toEqual(STATUS_CODE.SUCCESS);
     });
 
@@ -50,7 +50,7 @@ describe('Routes for User Management Screen', () => {
                     "visions": 13
                 }]
         };
-        const res = await request(app).post('/userLoadfromcsv').send(body);
+        const res = await request(app).post('/userLoadfromcsv').send(body).set("Authorization", "Bearer " + adviserAccessToken);
         expect(res.body.status).toEqual(STATUS_CODE.EMAIL_USED);
         expect(res.body.result).toEqual(['test002@vanderbilt.edu', 'test003@vanderbilt.edu']);
     });
@@ -63,7 +63,7 @@ describe('Routes for User Management Screen', () => {
             "type": 'vuceptor',
             "visions": 5
         };
-        const res = await request(app).post('/createUser').send(body);
+        const res = await request(app).post('/createUser').send(body).set("Authorization", "Bearer " + adviserAccessToken);
         expect(res.body.status).toEqual(STATUS_CODE.SUCCESS);
     });
 
@@ -75,7 +75,7 @@ describe('Routes for User Management Screen', () => {
             "type": 'vuceptor',
             "visions": 5
         };
-        const res = await request(app).post('/createUser').send(body);
+        const res = await request(app).post('/createUser').send(body).set("Authorization", "Bearer " + adviserAccessToken);
         expect(res.body.status).toEqual(STATUS_CODE.EMAIL_USED);
     });
 
@@ -195,20 +195,20 @@ describe('Routes for User Management Screen', () => {
             "type": 'vuceptor',
             "visions": 10
         };
-        const res = await request(app).post('/updateUser').send(body);
+        const res = await request(app).post('/updateUser').send(body).set("Authorization", "Bearer " + adviserAccessToken);
         expect(res.body.status).toEqual(STATUS_CODE.SUCCESS);
     });
 
     // routerUser.post('/deleteUser', userController.deleteUser);
     test('responds to /deleteUser', async () => {
         const body = {"email": "test002@vanderbilt.edu"};
-        const res = await request(app).post('/deleteUser').send(body);
+        const res = await request(app).post('/deleteUser').send(body).set("Authorization", "Bearer " + adviserAccessToken);
         expect(res.body.status).toEqual(STATUS_CODE.SUCCESS);
     });
 
     test('responds to /deleteUser: user does not exist', async () => {
         const body = {"email": 'test111@vanderbilt.edu'};
-        const res = await request(app).post('/deleteUser').send(body);
+        const res = await request(app).post('/deleteUser').send(body).set("Authorization", "Bearer " + adviserAccessToken);
         expect(res.body.status).toEqual(STATUS_CODE.INCORRECT_USER_EMAIL);
         expect(res.body.result).toEqual('test111@vanderbilt.edu');
     });

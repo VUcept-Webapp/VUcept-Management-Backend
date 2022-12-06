@@ -23,7 +23,7 @@ describe('Routes for Fy Events - Home Screen', () => {
                 }]
         };
 
-        const res = await request(app).post('/fyVisionsInfoLoadfromcsv').send(body);
+        const res = await request(app).post('/fyVisionsInfoLoadfromcsv').send(body).set("Authorization", "Bearer " + adviserAccessToken);
         expect(res.body.status).toEqual(STATUS_CODE.SUCCESS);
     });
 
@@ -37,7 +37,7 @@ describe('Routes for Fy Events - Home Screen', () => {
                 "location": "commons2"
             }]
         };
-        const res = await request(app).post('/fyVisionsInfoLoadfromcsv').send(body);
+        const res = await request(app).post('/fyVisionsInfoLoadfromcsv').send(body).set("Authorization", "Bearer " + adviserAccessToken);
         expect(res.body.status).toEqual(STATUS_CODE.INVALID_START_END_TIMES);
     });
 
@@ -51,7 +51,7 @@ describe('Routes for Fy Events - Home Screen', () => {
                 "location": "commons2"
             }]
         };
-        const res = await request(app).post('/fyVisionsInfoLoadfromcsv').send(body);
+        const res = await request(app).post('/fyVisionsInfoLoadfromcsv').send(body).set("Authorization", "Bearer " + adviserAccessToken);
         expect(res.body.status).toEqual(STATUS_CODE.VISIONS_EXIST);
     });
 
@@ -70,7 +70,7 @@ describe('Routes for Fy Events - Home Screen', () => {
                 "description": "tmp2"
                 }]
         };
-        const res = await request(app).post('/fyVisionsEventLoadfromcsv').send(body);
+        const res = await request(app).post('/fyVisionsEventLoadfromcsv').send(body).set("Authorization", "Bearer " + adviserAccessToken);
         expect(res.body.status).toEqual(STATUS_CODE.SUCCESS);
     });
 
@@ -87,7 +87,7 @@ describe('Routes for Fy Events - Home Screen', () => {
             "end_time": "10:00",
             "location": "commons233"
         };
-        const res = await request(app).post('/createfyEvent').send(body);
+        const res = await request(app).post('/createfyEvent').send.set("Authorization", "Bearer " + adviserAccessToken);
         expect(res.body.status).toEqual(STATUS_CODE.SUCCESS);
     });
 
@@ -105,7 +105,7 @@ describe('Routes for Fy Events - Home Screen', () => {
             "location": "commons233",
             "event_id": 9
         };
-        const res = await request(app).post('/updatefyEvent').send(body);
+        const res = await request(app).post('/updatefyEvent').send(body).set("Authorization", "Bearer " + adviserAccessToken);
         expect(res.body.status).toEqual(STATUS_CODE.SUCCESS);
     });
 
@@ -122,7 +122,7 @@ describe('Routes for Fy Events - Home Screen', () => {
     // routerfyEvent.post('/deletefyEvent', fyEventController.deletefyEvent);
     test('responds to /deletefyEvent', async () => {
         const body = {"event_id": -1};
-        const res = await request(app).post('/deletefyEvent').send(body);
+        const res = await request(app).post('/deletefyEvent').send(body).set("Authorization", "Bearer " + adviserAccessToken);
         expect(res.body.status).toEqual(STATUS_CODE.INCORRECT_EVENT_ID);
     });
 

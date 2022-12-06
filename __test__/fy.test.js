@@ -22,7 +22,7 @@ describe('Routes for Visions Assignment Screen', () => {
                 }]
         };
 
-        const res = await request(app).post('/fyLoadfromcsv').send(body);
+        const res = await request(app).post('/fyLoadfromcsv').send(body).set("Authorization", "Bearer " + adviserAccessToken);
         expect(res.body.status).toEqual(STATUS_CODE.SUCCESS);
     });
 
@@ -35,7 +35,7 @@ describe('Routes for Visions Assignment Screen', () => {
                 "visions": 20
                 }]
         };
-        const res = await request(app).post('/fyLoadfromcsv').send(body);
+        const res = await request(app).post('/fyLoadfromcsv').send(body).set("Authorization", "Bearer " + adviserAccessToken);
         expect(res.body.status).toEqual(STATUS_CODE.EMAIL_USED);
         expect(res.body.result).toEqual(['test002@vanderbilt.edu']);
     });
@@ -47,7 +47,7 @@ describe('Routes for Visions Assignment Screen', () => {
             "name": "test005",
             "visions": 5
         };
-        const res = await request(app).post('/createFy').send(body);
+        const res = await request(app).post('/createFy').send.set("Authorization", "Bearer " + adviserAccessToken);
         expect(res.body.status).toEqual(STATUS_CODE.SUCCESS);
     });
 
@@ -57,7 +57,7 @@ describe('Routes for Visions Assignment Screen', () => {
             "name": 'test050',
             "visions": 15
         };
-        const res = await request(app).post('/createFy').send(body);
+        const res = await request(app).post('/createFy').send(body).set("Authorization", "Bearer " + adviserAccessToken);
         expect(res.body.status).toEqual(STATUS_CODE.EMAIL_USED);
     });
 
@@ -156,20 +156,20 @@ describe('Routes for Visions Assignment Screen', () => {
             "name": "test010",
             "visions": 10
         };
-        const res = await request(app).post('/updateFy').send(body);
+        const res = await request(app).post('/updateFy').send(body).set("Authorization", "Bearer " + adviserAccessToken);
         expect(res.body.status).toEqual(STATUS_CODE.SUCCESS);
     });
 
     // routerFy.post('/deleteFy', fyController.deleteFy);
     test('responds to /deleteFy', async () => {
         const body = {"email": "test002@vanderbilt.edu"};
-        const res = await request(app).post('/deleteFy').send(body);
+        const res = await request(app).post('/deleteFy').send(body).set("Authorization", "Bearer " + adviserAccessToken);
         expect(res.body.status).toEqual(STATUS_CODE.SUCCESS);
     });
 
     test('responds to /deleteFy: user does not exist', async () => {
         const body = {"email": 'test111@vanderbilt.edu'};
-        const res = await request(app).post('/deleteFy').send(body);
+        const res = await request(app).post('/deleteFy').send(body).set("Authorization", "Bearer " + adviserAccessToken);
         expect(res.body.status).toEqual(STATUS_CODE.INCORRECT_STUDENT_EMAIL);
         expect(res.body.result).toEqual('test111@vanderbilt.edu');
     });
