@@ -1,4 +1,4 @@
-const { STATUS_CODE, SORT_ORDER } = require('../lib/constants');
+const { STATUS_CODE, SORT_ORDER, TYPE } = require('../lib/constants');
 const connection = require('../models/connection');
 
 // Shared functions: insertFy
@@ -52,6 +52,9 @@ exports.editFy = ({ old_email, email, name, visions }) => {
 
 //reset the Fy table
 exports.resetFy = async (req, res) => {
+  if (req.type != TYPE.ADVISER)  {
+    return res.send({status : STATUS_CODE.FORBIDDEN})
+}
   const query = 'DELETE FROM students;';
 
   const reset = new Promise((resolve, reject) => {
@@ -72,6 +75,9 @@ exports.resetFy = async (req, res) => {
 
 //load with csv file
 exports.fyLoadfromcsv = async (req, res) => {
+  if (req.type != TYPE.ADVISER)  {
+    return res.send({status : STATUS_CODE.FORBIDDEN})
+}
   const { file } = req.body;
   var duplicates = [];
 
@@ -103,6 +109,9 @@ exports.fyLoadfromcsv = async (req, res) => {
 
 //add one Fy
 exports.createFy = async (req, res) => {
+  if (req.type != TYPE.ADVISER)  {
+    return res.send({status : STATUS_CODE.FORBIDDEN})
+}
   const { email, name, visions } = req.body;
 
   try {
@@ -138,6 +147,9 @@ exports.updateFy = async (req, res) => {
 
 //delete one Fy
 exports.deleteFy = async (req, res) => {
+  if (req.type != TYPE.ADVISER)  {
+    return res.send({status : STATUS_CODE.FORBIDDEN})
+}
   try{
     const email = req.body.email;
    
@@ -160,6 +172,9 @@ exports.deleteFy = async (req, res) => {
 
 //get all first year students, return a json object
 exports.readFy = async (req, res) => {
+  if (req.type != TYPE.ADVISER && req.type != TYPE.VUCEPTOR)  {
+    return res.send({status : STATUS_CODE.FORBIDDEN})
+}
   const name_sort = (!req.query.name_sort) ? '' : ' students.name ' + req.query.name_sort;
   const email_sort = (!req.query.email_sort) ? '' : ' students.email ' + req.query.email_sort;
   const visions_sort = (!req.query.visions_sort) ? '' : ' students.visions ' + req.query.visions_sort;
